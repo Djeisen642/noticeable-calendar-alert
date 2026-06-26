@@ -124,6 +124,9 @@ The refresh token is stored in your **OS keychain** (Windows Credential Manager
 / macOS Keychain / Linux Secret Service) — never on disk in plaintext. The
 access token is refreshed silently; you only re-consent if you revoke access.
 
+To disconnect, use the tray's **Sign out** item — it deletes the stored token,
+so the next sync needs a fresh sign-in.
+
 ### Using a work (Google Workspace) account
 
 The code works with any account — your **primary** calendar is what's read, and

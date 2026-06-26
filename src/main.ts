@@ -22,6 +22,7 @@ import {
   showOverlay,
   hideOverlay,
   onSignInRequested,
+  onSignOutRequested,
 } from './lib/tauri.ts';
 
 /** How far ahead of a meeting to fire the overlay. */
@@ -88,6 +89,17 @@ class AlertController {
       await this.refresh();
     } catch (error) {
       console.error('Google sign-in failed', error);
+    }
+  }
+
+  /** Forget the account and dismiss any overlay that's currently showing. */
+  async signOut(): Promise<void> {
+    try {
+      await this.calendar.signOut();
+      this.next = null;
+      await this.tick(); // tears down a visible overlay now that next is null
+    } catch (error) {
+      console.error('Google sign-out failed', error);
     }
   }
 
@@ -169,8 +181,9 @@ function bootstrap(): void {
   const calendar = createCalendarSync();
   const controller = new AlertController(calendar, animator, elements);
 
-  // The tray "Sign in with Google" item emits this event.
+  // The tray "Sign in / Sign out" items emit these events.
   void onSignInRequested(() => void controller.signIn());
+  void onSignOutRequested(() => void controller.signOut());
 
   // Slow cadence: fetch the calendar. Fast cadence: tick the countdown UI.
   void controller.refresh();
