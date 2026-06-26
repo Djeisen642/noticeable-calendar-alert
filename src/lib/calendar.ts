@@ -46,9 +46,15 @@ export interface CalendarSync {
  */
 export class MockCalendarSync implements CalendarSync {
   private readonly secondsUntilMeeting: number;
+  /** Re-arm a new meeting this long after the previous one started. */
+  private readonly rearmAfterMs = 5_000;
+  private sequence = 0;
+  private current: CalendarEvent;
 
   constructor(secondsUntilMeeting = 8) {
     this.secondsUntilMeeting = secondsUntilMeeting;
+    // Pin the start time ONCE so the countdown actually decreases over time.
+    this.current = this.makeEvent();
   }
 
   authenticate(): Promise<OAuthToken> {
@@ -60,18 +66,24 @@ export class MockCalendarSync implements CalendarSync {
   }
 
   getUpcomingEvents(_withinMs: number): Promise<CalendarEvent[]> {
-    const start = new Date(Date.now() + this.secondsUntilMeeting * 1_000);
-    const end = new Date(start.getTime() + 30 * 60_000);
+    // Once the current meeting has started (and the overlay has dismissed),
+    // schedule a fresh one so the template keeps demoing the full sequence.
+    if (Date.now() - this.current.start.getTime() > this.rearmAfterMs) {
+      this.current = this.makeEvent();
+    }
+    return Promise.resolve([this.current]);
+  }
 
-    return Promise.resolve([
-      {
-        id: 'mock-event-001',
-        title: 'Sprint Planning',
-        start,
-        end,
-        joinUrl: 'https://meet.google.com/abc-defg-hij',
-      },
-    ]);
+  private makeEvent(): CalendarEvent {
+    this.sequence += 1;
+    const start = new Date(Date.now() + this.secondsUntilMeeting * 1_000);
+    return {
+      id: `mock-event-${String(this.sequence).padStart(3, '0')}`,
+      title: 'Sprint Planning',
+      start,
+      end: new Date(start.getTime() + 30 * 60_000),
+      joinUrl: 'https://meet.google.com/abc-defg-hij',
+    };
   }
 
   private fakeToken(): OAuthToken {

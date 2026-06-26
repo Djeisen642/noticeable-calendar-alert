@@ -28,8 +28,7 @@ pub fn run() {
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
 
-            TrayIconBuilder::with_id("main-tray")
-                .icon(app.default_window_icon().expect("default icon").clone())
+            let mut tray = TrayIconBuilder::with_id("main-tray")
                 .tooltip("Noticeable Calendar Alert")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -41,8 +40,15 @@ pub fn run() {
                         }
                     }
                     _ => {}
-                })
-                .build(app)?;
+                });
+
+            // The icon set is generated via `npm run tauri icon` and isn't
+            // committed, so degrade gracefully instead of panicking if absent.
+            if let Some(icon) = app.default_window_icon() {
+                tray = tray.icon(icon.clone());
+            }
+
+            tray.build(app)?;
 
             // --- Overlay window ------------------------------------------------
             // The window is declared (hidden) in tauri.conf.json. Park it on the

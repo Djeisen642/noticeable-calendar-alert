@@ -19,8 +19,14 @@ import { setClickThrough, openExternal, showOverlay, hideOverlay } from './lib/t
 
 /** How far ahead of a meeting to fire the overlay. */
 const LEAD_TIME_MINUTES = 5;
-/** How often to re-evaluate the calendar / tick the countdown. */
-const POLL_INTERVAL_MS = 1_000;
+/**
+ * How often to hit the calendar API. Kept deliberately slow: the real Google
+ * Calendar API is rate-limited, so we cache results and never fetch on the UI
+ * cadence.
+ */
+const FETCH_INTERVAL_MS = 30_000;
+/** How often to refresh the countdown UI from the cached event. No network. */
+const TICK_INTERVAL_MS = 1_000;
 
 /** Resolve a required element or fail loudly at startup. */
 function mustGet<T extends HTMLElement>(id: string): T {
@@ -51,6 +57,10 @@ class AlertController {
   private readonly animator: OverlayAnimator;
   private readonly elements: OverlayElements;
   private activeEventId: string | null = null;
+  /** Cached soonest event; refreshed on the slow fetch cadence. */
+  private next: CalendarEvent | null = null;
+  /** True while a present/dismiss animation is in flight (mutual exclusion). */
+  private busy = false;
 
   constructor(calendar: CalendarSync, animator: OverlayAnimator, elements: OverlayElements) {
     this.calendar = calendar;
@@ -60,32 +70,57 @@ class AlertController {
     this.elements.joinButton.addEventListener('click', () => {
       const url = this.elements.joinButton.dataset.url;
       if (url) void openExternal(url);
-      void this.dismiss();
+      void this.runExclusive(() => this.dismiss());
     });
   }
 
-  /** Single tick: refresh the countdown or decide whether to fire/clear. */
-  async tick(): Promise<void> {
-    const events = await this.calendar.getUpcomingEvents(LEAD_TIME_MINUTES * 60_000);
-    const next = events.at(0) ?? null;
-    const now = new Date();
-
-    if (next === null) {
-      if (this.activeEventId !== null) await this.dismiss();
-      return;
+  /** Slow path: refresh the cached event from the calendar API. */
+  async refresh(): Promise<void> {
+    try {
+      const events = await this.calendar.getUpcomingEvents(LEAD_TIME_MINUTES * 60_000);
+      this.next = events.at(0) ?? null;
+    } catch (error) {
+      console.error('Calendar refresh failed', error);
     }
+  }
 
-    const delta = getCountdownDelta(next.start, now);
+  /**
+   * Fast path: drive the overlay from the cached event. Never touches the
+   * network. Re-entrant ticks are dropped so animations never overlap.
+   */
+  tick(): Promise<void> {
+    return this.runExclusive(async () => {
+      const next = this.next;
+      const now = new Date();
 
-    if (this.activeEventId === next.id) {
-      // Already showing this meeting — just keep the countdown fresh.
-      this.animator.updateCountdown(formatCountdown(delta));
-      if (delta.isPast) await this.dismiss();
-      return;
-    }
+      if (next === null) {
+        if (this.activeEventId !== null) await this.dismiss();
+        return;
+      }
 
-    if (shouldAlert(next.start, now, LEAD_TIME_MINUTES)) {
-      await this.present(next, delta);
+      const delta = getCountdownDelta(next.start, now);
+
+      if (this.activeEventId === next.id) {
+        // Already showing this meeting — just keep the countdown fresh.
+        this.animator.updateCountdown(formatCountdown(delta));
+        if (delta.isPast) await this.dismiss();
+        return;
+      }
+
+      if (shouldAlert(next.start, now, LEAD_TIME_MINUTES)) {
+        await this.present(next, delta);
+      }
+    });
+  }
+
+  /** Serialize overlay mutations so present/dismiss can never interleave. */
+  private async runExclusive(fn: () => Promise<void>): Promise<void> {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      await fn();
+    } finally {
+      this.busy = false;
     }
   }
 
@@ -117,11 +152,12 @@ function bootstrap(): void {
   const calendar = new MockCalendarSync();
   const controller = new AlertController(calendar, animator, elements);
 
-  const loop = (): void => {
-    void controller.tick();
-  };
-  loop();
-  window.setInterval(loop, POLL_INTERVAL_MS);
+  // Slow cadence: fetch the calendar. Fast cadence: tick the countdown UI.
+  void controller.refresh();
+  window.setInterval(() => void controller.refresh(), FETCH_INTERVAL_MS);
+
+  void controller.tick();
+  window.setInterval(() => void controller.tick(), TICK_INTERVAL_MS);
 }
 
 window.addEventListener('DOMContentLoaded', bootstrap);

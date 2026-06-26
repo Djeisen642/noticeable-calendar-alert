@@ -50,14 +50,10 @@ body {
   bottom: 8px;
   width: 120px;
   height: 180px;
-  /* Start parked off the right edge; .is-onstage slides it in. */
+  /* Parked off the right edge by default; .is-onstage slides it in. */
   transform: translateX(160%);
   transition: transform var(--walk-duration) var(--walk-ease);
   will-change: transform;
-}
-
-.character.is-offscreen {
-  transform: translateX(160%);
 }
 
 .character.is-onstage {
