@@ -6,13 +6,26 @@
 //! machine (Windows Credential Manager / macOS Keychain / Linux Secret Service).
 
 use std::io::{Read, Write};
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
+use std::time::{Duration, Instant};
 
 use keyring::Entry;
 use serde::Serialize;
 
 const KEYCHAIN_SERVICE: &str = "noticeable-calendar-alert";
 const KEYCHAIN_ACCOUNT: &str = "google-oauth-token";
+
+/// Give up if the redirect never arrives (user cancelled, browser failed, …)
+/// so the listener thread and the bound port are always reclaimed.
+const CAPTURE_TIMEOUT: Duration = Duration::from_secs(180);
+/// How long a single connected client may take to send its request line.
+const CLIENT_READ_TIMEOUT: Duration = Duration::from_secs(5);
+const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(100);
+
+const SUCCESS_HTML: &str = "<!doctype html><meta charset=utf-8>\
+    <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
+    <h2>Signed in \u{2713}</h2>\
+    <p>You can close this tab and return to Noticeable Calendar Alert.</p>";
 
 #[derive(Serialize)]
 pub struct OauthRedirect {
@@ -33,10 +46,40 @@ pub async fn oauth_capture(port: u16) -> Result<OauthRedirect, String> {
 
 fn capture_once(port: u16) -> Result<OauthRedirect, String> {
     let listener = TcpListener::bind(("127.0.0.1", port)).map_err(|err| err.to_string())?;
-    let (mut stream, _addr) = listener.accept().map_err(|err| err.to_string())?;
+    listener.set_nonblocking(true).map_err(|err| err.to_string())?;
+
+    // Accept connections until one carries the redirect, or we time out. This
+    // tolerates stray local probes (favicon requests, port scanners) that would
+    // otherwise derail a single blocking accept, and guarantees the thread/port
+    // are released even if the user never completes consent.
+    let deadline = Instant::now() + CAPTURE_TIMEOUT;
+    loop {
+        if Instant::now() >= deadline {
+            return Err("Timed out waiting for the OAuth redirect".to_string());
+        }
+        match listener.accept() {
+            Ok((stream, _addr)) => {
+                if let Some(redirect) = handle_connection(stream) {
+                    return Ok(redirect);
+                }
+                // No code in this request — keep waiting for the real redirect.
+            }
+            Err(ref err) if err.kind() == std::io::ErrorKind::WouldBlock => {
+                std::thread::sleep(ACCEPT_POLL_INTERVAL);
+            }
+            Err(err) => return Err(err.to_string()),
+        }
+    }
+}
+
+/// Read one HTTP request and, if it carries `code` + `state`, answer with the
+/// success page and return them. Returns `None` for anything else.
+fn handle_connection(mut stream: TcpStream) -> Option<OauthRedirect> {
+    let _ = stream.set_nonblocking(false);
+    let _ = stream.set_read_timeout(Some(CLIENT_READ_TIMEOUT));
 
     let mut buffer = [0u8; 4096];
-    let read = stream.read(&mut buffer).map_err(|err| err.to_string())?;
+    let read = stream.read(&mut buffer).ok()?;
     let request = String::from_utf8_lossy(&buffer[..read]);
 
     // The request line looks like: `GET /?code=...&state=... HTTP/1.1`.
@@ -62,22 +105,17 @@ fn capture_once(port: u16) -> Result<OauthRedirect, String> {
         }
     }
 
-    let html = "<!doctype html><meta charset=utf-8>\
-        <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
-        <h2>Signed in \u{2713}</h2>\
-        <p>You can close this tab and return to Noticeable Calendar Alert.</p>";
+    let (code, state) = (code?, state?);
+
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-        html.len(),
-        html
+        SUCCESS_HTML.len(),
+        SUCCESS_HTML
     );
     let _ = stream.write_all(response.as_bytes());
     let _ = stream.flush();
 
-    match (code, state) {
-        (Some(code), Some(state)) => Ok(OauthRedirect { code, state }),
-        _ => Err("OAuth redirect was missing code or state".to_string()),
-    }
+    Some(OauthRedirect { code, state })
 }
 
 fn entry() -> Result<Entry, String> {
