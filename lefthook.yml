@@ -1,0 +1,31 @@
+# Lefthook git hooks — https://lefthook.dev
+#
+# Each command operates on *staged* files only, so commits stay fast even as
+# the repository grows. Auto-fixes are re-staged via `stage_fixed`.
+
+pre-commit:
+  parallel: true
+  commands:
+    # Auto-fix lint violations on staged JS/TS files.
+    eslint:
+      glob: '*.{js,ts,mjs,cjs}'
+      run: npx eslint --fix {staged_files}
+      stage_fixed: true
+
+    # Enforce consistent formatting on everything Prettier understands.
+    prettier:
+      glob: '*.{js,ts,mjs,cjs,json,jsonc,css,html,md,yml,yaml}'
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
+
+    # Full project type-check. `tsc` needs the whole graph for type info, so we
+    # gate on staged TS files but always validate the entire project.
+    typecheck:
+      glob: '*.{ts,tsx}'
+      run: npx tsc --noEmit
+
+commit-msg:
+  commands:
+    # Placeholder for a future commit-lint integration.
+    noop:
+      run: 'true'
