@@ -8,14 +8,21 @@
  */
 
 import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
-import { MockCalendarSync, type CalendarEvent, type CalendarSync } from './lib/calendar.ts';
+import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
+import { createCalendarSync } from './lib/google/config.ts';
 import {
   getCountdownDelta,
   formatCountdown,
   shouldAlert,
   type CountdownDelta,
 } from './lib/countdown.ts';
-import { setClickThrough, openExternal, showOverlay, hideOverlay } from './lib/tauri.ts';
+import {
+  setClickThrough,
+  openExternal,
+  showOverlay,
+  hideOverlay,
+  onSignInRequested,
+} from './lib/tauri.ts';
 
 /** How far ahead of a meeting to fire the overlay. */
 const LEAD_TIME_MINUTES = 5;
@@ -72,6 +79,16 @@ class AlertController {
       if (url) void openExternal(url);
       void this.runExclusive(() => this.dismiss());
     });
+  }
+
+  /** Run the interactive Google sign-in, then refresh immediately. */
+  async signIn(): Promise<void> {
+    try {
+      await this.calendar.authenticate();
+      await this.refresh();
+    } catch (error) {
+      console.error('Google sign-in failed', error);
+    }
   }
 
   /** Slow path: refresh the cached event from the calendar API. */
@@ -148,9 +165,12 @@ class AlertController {
 function bootstrap(): void {
   const elements = resolveElements();
   const animator = new OverlayAnimator(elements);
-  // Swap MockCalendarSync for the real GoogleCalendarSync once OAuth lands.
-  const calendar = new MockCalendarSync();
+  // Real GoogleCalendarSync when configured + in the desktop app; mock otherwise.
+  const calendar = createCalendarSync();
   const controller = new AlertController(calendar, animator, elements);
+
+  // The tray "Sign in with Google" item emits this event.
+  void onSignInRequested(() => void controller.signIn());
 
   // Slow cadence: fetch the calendar. Fast cadence: tick the countdown UI.
   void controller.refresh();

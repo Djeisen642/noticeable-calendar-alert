@@ -68,3 +68,16 @@ export async function showOverlay(): Promise<void> {
   await win.show();
   await win.setFocus();
 }
+
+/**
+ * Subscribe to the tray's "Sign in with Google" menu event. A no-op in the
+ * browser, where there is no tray.
+ */
+export async function onSignInRequested(handler: () => void): Promise<void> {
+  if (!isTauri()) return;
+
+  const { listen } = await import('@tauri-apps/api/event');
+  await listen('google-signin', () => {
+    handler();
+  });
+}

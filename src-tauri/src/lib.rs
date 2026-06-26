@@ -1,7 +1,9 @@
+mod oauth;
+
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager, WebviewWindow,
+    Emitter, Manager, WebviewWindow,
 };
 
 /// Toggle mouse click-through for a window.
@@ -21,18 +23,31 @@ fn set_click_through(window: WebviewWindow, enabled: bool) -> Result<(), String>
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![set_click_through])
+        .plugin(tauri_plugin_http::init())
+        .invoke_handler(tauri::generate_handler![
+            set_click_through,
+            oauth::oauth_capture,
+            oauth::token_save,
+            oauth::token_load,
+            oauth::token_clear,
+        ])
         .setup(|app| {
             // --- System tray ---------------------------------------------------
+            let signin_item =
+                MenuItem::with_id(app, "signin", "Sign in with Google", true, None::<&str>)?;
             let show_item = MenuItem::with_id(app, "show", "Test Overlay", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+            let menu = Menu::with_items(app, &[&signin_item, &show_item, &quit_item])?;
 
             let mut tray = TrayIconBuilder::with_id("main-tray")
                 .tooltip("Noticeable Calendar Alert")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => app.exit(0),
+                    "signin" => {
+                        // The overlay webview runs the interactive OAuth flow.
+                        let _ = app.emit("google-signin", ());
+                    }
                     "show" => {
                         if let Some(window) = app.get_webview_window("overlay") {
                             let _ = window.show();

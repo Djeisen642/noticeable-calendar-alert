@@ -17,8 +17,23 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
 tauri-plugin-opener = "2"
+tauri-plugin-http = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# OAuth redirect query parsing.
+urlencoding = "2"
+
+# Secure token storage in the OS keychain. The backend (and its system deps)
+# is selected per platform so Windows doesn't pull the Linux Secret Service
+# stack and vice-versa.
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 
 [features]
 # This feature is used by the CLI for production builds.

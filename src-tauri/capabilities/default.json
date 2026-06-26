@@ -8,6 +8,15 @@
     "core:window:allow-show",
     "core:window:allow-hide",
     "core:window:allow-set-focus",
-    "opener:allow-open-url"
+    "core:event:allow-listen",
+    "opener:allow-open-url",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://accounts.google.com/*" },
+        { "url": "https://oauth2.googleapis.com/*" },
+        { "url": "https://www.googleapis.com/*" }
+      ]
+    }
   ]
 }
