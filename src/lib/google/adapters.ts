@@ -12,6 +12,12 @@ import type { OAuthToken } from '../calendar.ts';
 import type { Authorizer, HttpClient, HttpResponse, TokenStore } from './ports.ts';
 import { openExternal } from '../tauri.ts';
 
+/** Invoke a Rust command, dynamic-importing the Tauri core lazily. */
+async function invokeCommand<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<T>(command, args);
+}
+
 /** HTTP via `@tauri-apps/plugin-http`, which proxies through Rust (no CORS). */
 export class TauriHttpClient implements HttpClient {
   async postForm(url: string, body: URLSearchParams): Promise<HttpResponse> {
@@ -21,17 +27,17 @@ export class TauriHttpClient implements HttpClient {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     });
-    return wrap(res);
+    return toHttpResponse(res);
   }
 
   async getJson(url: string, headers: Record<string, string>): Promise<HttpResponse> {
     const { fetch } = await import('@tauri-apps/plugin-http');
     const res = await fetch(url, { method: 'GET', headers });
-    return wrap(res);
+    return toHttpResponse(res);
   }
 }
 
-function wrap(res: Response): HttpResponse {
+function toHttpResponse(res: Response): HttpResponse {
   return {
     status: res.status,
     json: async (): Promise<unknown> => {
@@ -52,8 +58,7 @@ interface StoredToken {
 /** Persists the token in the OS keychain via Rust `token_*` commands. */
 export class KeychainTokenStore implements TokenStore {
   async load(): Promise<OAuthToken | null> {
-    const { invoke } = await import('@tauri-apps/api/core');
-    const raw = await invoke<string | null>('token_load');
+    const raw = await invokeCommand<string | null>('token_load');
     if (!raw) {
       return null;
     }
@@ -62,14 +67,12 @@ export class KeychainTokenStore implements TokenStore {
   }
 
   async save(token: OAuthToken): Promise<void> {
-    const { invoke } = await import('@tauri-apps/api/core');
     const payload: StoredToken = { ...token, expiresAt: token.expiresAt.toISOString() };
-    await invoke('token_save', { value: JSON.stringify(payload) });
+    await invokeCommand('token_save', { value: JSON.stringify(payload) });
   }
 
   async clear(): Promise<void> {
-    const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('token_clear');
+    await invokeCommand('token_clear');
   }
 }
 
@@ -80,11 +83,14 @@ export class KeychainTokenStore implements TokenStore {
  */
 export class LoopbackAuthorizer implements Authorizer {
   async authorize(authUrl: string, redirectUri: string): Promise<{ code: string; state: string }> {
-    const { invoke } = await import('@tauri-apps/api/core');
     const port = Number(new URL(redirectUri).port);
 
-    const captured = invoke<{ code: string; state: string }>('oauth_capture', { port });
+    // Start the loopback listener BEFORE opening the browser so the redirect
+    // can't arrive before we're listening.
+    const capturePromise = invokeCommand<{ code: string; state: string }>('oauth_capture', {
+      port,
+    });
     await openExternal(authUrl);
-    return captured;
+    return capturePromise;
   }
 }

@@ -6,9 +6,10 @@
 
 import type { CalendarEvent } from '../calendar.ts';
 import { safeJoinUrl } from '../url.ts';
+import { MS_PER_MINUTE } from '../time.ts';
 
 const EVENTS_ENDPOINT = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
-const DEFAULT_MEETING_MS = 30 * 60_000;
+const DEFAULT_MEETING_MS = 30 * MS_PER_MINUTE;
 
 /** Build the `events.list` request URL for the lookahead window. */
 export function buildEventsListUrl(now: Date, withinMs: number, maxResults = 10): string {
@@ -78,7 +79,7 @@ function timedRange(item: Record<string, unknown>): { start: Date; end: Date } |
  * Map a raw `events.list` payload to normalized events, dropping cancelled and
  * all-day entries, sorted soonest-first.
  */
-export function parseEventsResponse(payload: unknown, _now: Date = new Date()): CalendarEvent[] {
+export function parseEventsResponse(payload: unknown): CalendarEvent[] {
   if (!isRecord(payload) || !Array.isArray(payload.items)) {
     return [];
   }

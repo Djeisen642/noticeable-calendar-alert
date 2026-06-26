@@ -29,6 +29,19 @@ export interface BubbleContent {
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * Fallback timeouts for `awaitTransition`. Each MUST stay greater than the
+ * matching CSS duration in `styles.css`, so a real transition is always awaited
+ * to completion while a missed `transitionend` still can't wedge the sequence.
+ * Keep them above their CSS counterparts:
+ *   WALK_TIMEOUT_MS        > --walk-duration (1100ms)
+ *   BUBBLE_FADE_TIMEOUT_MS > .bubble opacity transition (320ms)
+ */
+const WALK_TIMEOUT_MS = 1400;
+const BUBBLE_FADE_TIMEOUT_MS = 600;
+/** How long the character holds the wave before the bubble appears. */
+const WAVE_HOLD_MS = 900;
+
+/**
  * Await a specific CSS transition on `el`, with a timeout fallback so a missed
  * `transitionend` (e.g. when the property doesn't actually change) can never
  * wedge the sequence.
@@ -74,11 +87,11 @@ export class OverlayAnimator {
     // 1. Walk in from off-screen right (CSS transitions the transform).
     this.setState('walking');
     this.el.character.classList.add('is-onstage');
-    await awaitTransition(this.el.character, 'transform', 1400);
+    await awaitTransition(this.el.character, 'transform', WALK_TIMEOUT_MS);
 
     // 2. Plant feet and wave.
     this.setState('waving');
-    await sleep(900);
+    await sleep(WAVE_HOLD_MS);
 
     // 3. Fade in the speech bubble.
     this.el.bubble.classList.remove('is-hidden');
@@ -90,12 +103,12 @@ export class OverlayAnimator {
   /** Reverse of `present`: hide the bubble, then walk the character off. */
   async dismiss(): Promise<void> {
     this.el.bubble.classList.remove('is-visible');
-    await awaitTransition(this.el.bubble, 'opacity', 600);
+    await awaitTransition(this.el.bubble, 'opacity', BUBBLE_FADE_TIMEOUT_MS);
     this.el.bubble.classList.add('is-hidden');
 
     this.setState('walking');
     this.el.character.classList.remove('is-onstage');
-    await awaitTransition(this.el.character, 'transform', 1400);
+    await awaitTransition(this.el.character, 'transform', WALK_TIMEOUT_MS);
 
     this.setState('idle');
   }

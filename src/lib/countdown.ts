@@ -5,6 +5,8 @@
  * module trivially unit-testable (see `countdown.test.ts`).
  */
 
+import { MS_PER_SECOND, MS_PER_MINUTE } from './time.ts';
+
 export interface CountdownDelta {
   /** Signed milliseconds until the meeting. Negative once it has started. */
   readonly totalMs: number;
@@ -15,9 +17,6 @@ export interface CountdownDelta {
   /** `true` once the start time is in the past. */
   readonly isPast: boolean;
 }
-
-const MS_PER_SECOND = 1_000;
-const MS_PER_MINUTE = 60_000;
 
 /**
  * Compute the time remaining until `start`, relative to `now`.
@@ -64,8 +63,6 @@ export function shouldAlert(start: Date, now: Date, leadTimeMinutes: number): bo
  * formatCountdown(getCountdownDelta(start, now)); // "in 4m 05s"
  */
 export function formatCountdown(delta: CountdownDelta): string {
-  const padSeconds = String(delta.seconds).padStart(2, '0');
-
   if (delta.isPast) {
     return delta.minutes === 0 ? 'starting now' : `started ${delta.minutes}m ago`;
   }
@@ -74,5 +71,6 @@ export function formatCountdown(delta: CountdownDelta): string {
     return `in ${delta.seconds}s`;
   }
 
+  const padSeconds = String(delta.seconds).padStart(2, '0');
   return `in ${delta.minutes}m ${padSeconds}s`;
 }
