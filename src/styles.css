@@ -48,8 +48,8 @@ body {
   position: absolute;
   right: 16px;
   bottom: 8px;
-  width: 120px;
-  height: 180px;
+  width: 140px;
+  height: 190px;
   /* Parked off the right edge by default; .is-onstage slides it in. */
   transform: translateX(160%);
   transition: transform var(--walk-duration) var(--walk-ease);
@@ -65,11 +65,12 @@ body {
   animation: bob 280ms ease-in-out infinite;
 }
 
-/* Waving: rotate just the arm group around the shoulder. */
+/* Waving: the arm is already raised; pivot it at the shoulder (bottom-left of
+   the arm's own box) so the raised hand swings side to side like a real wave. */
 .character[data-state='waving'] #arm {
   transform-box: fill-box;
-  transform-origin: top center;
-  animation: wave 600ms ease-in-out infinite;
+  transform-origin: left bottom;
+  animation: wave 550ms ease-in-out infinite;
 }
 
 @keyframes bob {
@@ -85,13 +86,10 @@ body {
 @keyframes wave {
   0%,
   100% {
-    transform: rotate(0deg);
+    transform: rotate(-11deg);
   }
-  25% {
-    transform: rotate(-24deg);
-  }
-  75% {
-    transform: rotate(18deg);
+  50% {
+    transform: rotate(13deg);
   }
 }
 

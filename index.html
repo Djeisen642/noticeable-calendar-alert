@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Noticeable Calendar Alert</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
@@ -23,33 +24,62 @@
         <span class="bubble__tail" aria-hidden="true"></span>
       </section>
 
-      <!-- Vector character. The #arm group is what waves. -->
+      <!-- Vector character. The #arm group is the raised arm that waves. -->
       <div id="character" class="character" data-state="idle" aria-hidden="true">
-        <svg viewBox="0 0 120 180" width="120" height="180" xmlns="http://www.w3.org/2000/svg">
-          <!-- Legs -->
+        <svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bodyFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#6f9bf2" />
+              <stop offset="1" stop-color="#4f7ce0" />
+            </linearGradient>
+          </defs>
+
+          <!-- Ground shadow -->
+          <ellipse cx="68" cy="183" rx="32" ry="6" fill="#000000" opacity="0.16" />
+
+          <!-- Legs + shoes -->
           <g class="character__legs">
-            <rect x="44" y="130" width="12" height="40" rx="6" fill="#3b3b5c" />
-            <rect x="64" y="130" width="12" height="40" rx="6" fill="#2f2f4a" />
+            <rect x="54" y="148" width="12" height="28" rx="6" fill="#3a4668" />
+            <rect x="70" y="148" width="12" height="28" rx="6" fill="#323c5a" />
+            <ellipse cx="58" cy="177" rx="11" ry="6" fill="#2b3350" />
+            <ellipse cx="78" cy="177" rx="11" ry="6" fill="#2b3350" />
           </g>
+
+          <!-- Resting arm (tucked behind the body) -->
+          <rect x="30" y="92" width="13" height="46" rx="6.5" fill="#4f7ce0" />
+          <circle cx="36.5" cy="140" r="8" fill="#ffd2a6" />
+
           <!-- Body -->
-          <rect x="34" y="70" width="52" height="68" rx="22" fill="#5b8def" />
-          <!-- Waving arm (rotates around the shoulder) -->
+          <rect x="38" y="84" width="62" height="74" rx="26" fill="url(#bodyFill)" />
+          <ellipse cx="69" cy="122" rx="18" ry="22" fill="#ffffff" opacity="0.08" />
+
+          <!-- Waving arm: drawn RAISED, pivots at the shoulder -->
           <g id="arm" class="character__arm">
-            <rect x="80" y="74" width="12" height="40" rx="6" fill="#4a78d8" />
-            <circle cx="86" cy="116" r="9" fill="#ffd9a0" />
+            <path
+              d="M93 99 Q114 70 120 50"
+              stroke="#5a86e8"
+              stroke-width="13"
+              stroke-linecap="round"
+              fill="none"
+            />
+            <circle cx="121" cy="47" r="9.5" fill="#ffd2a6" />
           </g>
-          <!-- Resting arm -->
-          <rect x="28" y="78" width="12" height="38" rx="6" fill="#4a78d8" />
+
           <!-- Head -->
-          <circle cx="60" cy="44" r="30" fill="#ffd9a0" />
-          <!-- Eyes -->
-          <circle class="character__eye" cx="50" cy="42" r="4" fill="#2b2b3a" />
-          <circle class="character__eye" cx="70" cy="42" r="4" fill="#2b2b3a" />
+          <circle cx="69" cy="50" r="32" fill="#ffd2a6" />
+          <!-- Cheeks -->
+          <circle cx="54" cy="58" r="6" fill="#ff9d9d" opacity="0.5" />
+          <circle cx="84" cy="58" r="6" fill="#ff9d9d" opacity="0.5" />
+          <!-- Eyes + sparkle -->
+          <circle cx="60" cy="46" r="4.5" fill="#2b2b3a" />
+          <circle cx="80" cy="46" r="4.5" fill="#2b2b3a" />
+          <circle cx="61.6" cy="44.4" r="1.5" fill="#ffffff" />
+          <circle cx="81.6" cy="44.4" r="1.5" fill="#ffffff" />
           <!-- Smile -->
           <path
-            d="M48 54 Q60 64 72 54"
+            d="M58 60 Q69 70 80 60"
             stroke="#2b2b3a"
-            stroke-width="3"
+            stroke-width="3.2"
             fill="none"
             stroke-linecap="round"
           />
