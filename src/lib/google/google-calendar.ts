@@ -65,6 +65,12 @@ export class GoogleCalendarSync implements CalendarSync {
       buildRefreshBody(this.cfg, token.refreshToken),
     );
     if (res.status !== 200) {
+      // A 400 (invalid_grant) or 401 means the refresh token is dead — revoked,
+      // expired, or the consent was withdrawn. Drop it so the app stops hammering
+      // a stale credential every poll and can prompt a fresh sign-in instead.
+      if (res.status === 400 || res.status === 401) {
+        await this.store.clear();
+      }
       throw new Error(`Token refresh failed (HTTP ${String(res.status)})`);
     }
 

@@ -156,6 +156,21 @@ describe('getUpcomingEvents', () => {
     expect(store.token?.accessToken).toBe('NEW');
   });
 
+  it('clears the stored token when refresh fails with invalid_grant (400)', async () => {
+    store.token = {
+      accessToken: 'OLD',
+      refreshToken: 'REVOKED',
+      expiresAt: new Date(Date.now() - 1_000), // expired → forces a refresh
+      scope: CALENDAR_READONLY_SCOPE,
+    };
+    http.queuePost(jsonResponse(400, { error: 'invalid_grant' }));
+
+    // The poll surfaces no events rather than crashing the caller...
+    await expect(sync.getUpcomingEvents(300_000)).rejects.toThrow(/HTTP 400/);
+    // ...and the dead refresh token is gone, so the next poll won't retry it.
+    expect(store.token).toBeNull();
+  });
+
   it('clears the stored token and returns [] on a 401', async () => {
     store.token = {
       accessToken: 'AT',
