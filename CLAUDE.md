@@ -59,8 +59,17 @@ src/
     animation.ts        # OverlayAnimator state machine (idle → walking → waving)
     url.ts(.test)       # safeExternalUrl(): http(s)-only guard for untrusted links
     tauri.ts            # Optional native bridge; degrades gracefully in a browser
+    google/             # Real Google Calendar OAuth layer
+      pkce.ts(.test)     # PKCE verifier/challenge + state (RFC 7636)
+      oauth.ts(.test)    # Auth-URL / token-body builders, expiry math
+      events.ts(.test)   # events.list JSON -> CalendarEvent[] (no-any parsing)
+      ports.ts           # HttpClient / TokenStore / Authorizer seams
+      google-calendar.ts(.test) # GoogleCalendarSync over the ports (tested w/ fakes)
+      adapters.ts        # Tauri adapters (http plugin, keychain, loopback) — UNRUN
+      config.ts          # createCalendarSync() factory + VITE_GOOGLE_* env
 src-tauri/
-  src/lib.rs           # Tray icon, overlay window setup, set_click_through command
+  src/lib.rs           # Tray icon, overlay window, set_click_through, plugin/command wiring
+  src/oauth.rs         # Loopback redirect capture + keychain token commands — UNRUN
   src/main.rs          # Binary entry point
   tauri.conf.json      # Transparent, alwaysOnTop, skipTaskbar, hidden-until-needed window
   capabilities/        # Least-privilege permission set (only what JS invokes)
@@ -132,13 +141,20 @@ trusting them:
   the IPC `connect-src` (`ipc:` / `http://ipc.localhost`) is sufficient and that
   app-defined commands don't need a capability entry (they should not in v2).
 - **Tray icon + menu** rendering and the "Test Overlay" item.
+- **The Google OAuth native path** — `src-tauri/src/oauth.rs` (loopback redirect
+  capture + keychain) and `src/lib/google/adapters.ts`. The OAuth/Calendar
+  _logic_ is fully unit-tested via injected ports, but the live consent
+  round-trip, the `tauri-plugin-http` calls, and the OS keychain
+  (`token_save/load/clear`) need a real desktop run. Set `VITE_GOOGLE_*` in
+  `.env`, then use the tray "Sign in with Google" item.
 
 When you touch any of the above, say explicitly in your summary that it is
 reviewed-but-unrun, and list what the user must check on-device.
 
 ## Known follow-ups (not yet done)
 
-- Real `GoogleCalendarSync` (OAuth 2.0 PKCE + `events.list`) replacing the mock.
+- Verify the Google OAuth native path on a real machine (logic is tested; the
+  loopback/keychain/http-plugin adapters are reviewed-but-unrun).
 - Commit a real icon set / `Cargo.lock`; add `icon.ico`/`icon.icns` back to
   `bundle.icon` for release bundling.
 - Multi-monitor-aware overlay positioning (account for monitor origin + taskbar).

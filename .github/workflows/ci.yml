@@ -64,7 +64,9 @@ jobs:
             libxdo-dev \
             libssl-dev \
             libayatana-appindicator3-dev \
-            librsvg2-dev
+            librsvg2-dev \
+            libdbus-1-dev \
+            pkg-config
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
