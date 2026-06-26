@@ -58,6 +58,11 @@ export class GoogleCalendarSync implements CalendarSync {
     return token;
   }
 
+  /** Forget the stored token; the next sync will require re-consent. */
+  async signOut(): Promise<void> {
+    await this.store.clear();
+  }
+
   /** Exchange a refresh token for a fresh access token and persist it. */
   async refresh(token: OAuthToken): Promise<OAuthToken> {
     const res = await this.http.postForm(

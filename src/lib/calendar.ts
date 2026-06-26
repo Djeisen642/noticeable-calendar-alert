@@ -36,6 +36,8 @@ export interface CalendarSync {
   authenticate(): Promise<OAuthToken>;
   /** Exchange a refresh token for a new access token. */
   refresh(token: OAuthToken): Promise<OAuthToken>;
+  /** Forget any stored credentials so the next sync requires re-consent. */
+  signOut(): Promise<void>;
   /** Events starting within the next `withinMs` milliseconds, soonest first. */
   getUpcomingEvents(withinMs: number): Promise<CalendarEvent[]>;
 }
@@ -63,6 +65,10 @@ export class MockCalendarSync implements CalendarSync {
 
   authenticate(): Promise<OAuthToken> {
     return Promise.resolve(this.fakeToken());
+  }
+
+  signOut(): Promise<void> {
+    return Promise.resolve();
   }
 
   refresh(_token: OAuthToken): Promise<OAuthToken> {

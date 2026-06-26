@@ -81,3 +81,13 @@ export async function onSignInRequested(handler: () => void): Promise<void> {
     handler();
   });
 }
+
+/** Subscribe to the tray's "Sign out" menu event. A no-op in the browser. */
+export async function onSignOutRequested(handler: () => void): Promise<void> {
+  if (!isTauri()) return;
+
+  const { listen } = await import('@tauri-apps/api/event');
+  await listen('google-signout', () => {
+    handler();
+  });
+}

@@ -109,6 +109,22 @@ describe('authenticate', () => {
   });
 });
 
+describe('signOut', () => {
+  it('clears the stored token', async () => {
+    store.token = {
+      accessToken: 'AT',
+      refreshToken: 'RT',
+      expiresAt: new Date(Date.now() + 3_600_000),
+      scope: CALENDAR_READONLY_SCOPE,
+    };
+
+    await sync.signOut();
+
+    expect(store.token).toBeNull();
+    expect(await sync.getUpcomingEvents(300_000)).toEqual([]);
+  });
+});
+
 describe('getUpcomingEvents', () => {
   it('returns [] when not signed in (no forced consent)', async () => {
     expect(await sync.getUpcomingEvents(300_000)).toEqual([]);

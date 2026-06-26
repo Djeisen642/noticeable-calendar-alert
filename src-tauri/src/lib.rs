@@ -35,9 +35,11 @@ pub fn run() {
             // --- System tray ---------------------------------------------------
             let signin_item =
                 MenuItem::with_id(app, "signin", "Sign in with Google", true, None::<&str>)?;
+            let signout_item =
+                MenuItem::with_id(app, "signout", "Sign out", true, None::<&str>)?;
             let show_item = MenuItem::with_id(app, "show", "Test Overlay", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&signin_item, &show_item, &quit_item])?;
+            let menu = Menu::with_items(app, &[&signin_item, &signout_item, &show_item, &quit_item])?;
 
             let mut tray = TrayIconBuilder::with_id("main-tray")
                 .tooltip("Noticeable Calendar Alert")
@@ -47,6 +49,9 @@ pub fn run() {
                     "signin" => {
                         // The overlay webview runs the interactive OAuth flow.
                         let _ = app.emit("google-signin", ());
+                    }
+                    "signout" => {
+                        let _ = app.emit("google-signout", ());
                     }
                     "show" => {
                         if let Some(window) = app.get_webview_window("overlay") {
