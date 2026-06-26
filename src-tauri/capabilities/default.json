@@ -13,9 +13,8 @@
     {
       "identifier": "http:default",
       "allow": [
-        { "url": "https://accounts.google.com/*" },
-        { "url": "https://oauth2.googleapis.com/*" },
-        { "url": "https://www.googleapis.com/*" }
+        { "url": "https://oauth2.googleapis.com/token" },
+        { "url": "https://www.googleapis.com/calendar/v3/*" }
       ]
     }
   ]

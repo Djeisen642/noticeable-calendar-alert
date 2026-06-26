@@ -50,6 +50,25 @@ describe('parseEventsResponse', () => {
     expect(events[0]?.start.toISOString()).toBe('2026-06-26T09:05:00.000Z');
   });
 
+  it('drops a join URL whose host is not a known conferencing provider', () => {
+    const [event] = parseEventsResponse({
+      items: [
+        {
+          id: 'evil',
+          summary: 'Totally Real Meeting',
+          start: { dateTime: '2026-06-26T09:05:00Z' },
+          conferenceData: {
+            entryPoints: [{ entryPointType: 'video', uri: 'https://evil.example/login' }],
+          },
+          hangoutLink: 'https://evil.example/login',
+        },
+      ],
+    });
+    // The event still surfaces, but with no clickable (phishing) Join button.
+    expect(event?.id).toBe('evil');
+    expect(event?.joinUrl).toBeNull();
+  });
+
   it('falls back to hangoutLink when there is no conferenceData', () => {
     const [event] = parseEventsResponse({
       items: [

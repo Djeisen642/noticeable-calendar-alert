@@ -5,14 +5,26 @@
 //! live OAuth round-trip and the OS keychain access must be verified on a real
 //! machine (Windows Credential Manager / macOS Keychain / Linux Secret Service).
 
-use std::io::{Read, Write};
-use std::net::TcpListener;
+use std::io::{ErrorKind, Read, Write};
+use std::net::{TcpListener, TcpStream};
+use std::thread;
+use std::time::{Duration, Instant};
 
 use keyring::Entry;
 use serde::Serialize;
 
 const KEYCHAIN_SERVICE: &str = "noticeable-calendar-alert";
 const KEYCHAIN_ACCOUNT: &str = "google-oauth-token";
+
+/// How long to wait for the browser to deliver the OAuth redirect before giving
+/// up. Without this the accept() would block forever if the user closes the
+/// consent tab, leaking the thread *and* keeping the port bound so the next
+/// sign-in attempt fails with "address in use".
+const CAPTURE_TIMEOUT: Duration = Duration::from_secs(180);
+/// Idle poll interval while waiting on the non-blocking listener.
+const POLL_INTERVAL: Duration = Duration::from_millis(100);
+/// Cap a single client read so a slow/partial connection can't wedge the loop.
+const READ_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Serialize)]
 pub struct OauthRedirect {
@@ -33,10 +45,38 @@ pub async fn oauth_capture(port: u16) -> Result<OauthRedirect, String> {
 
 fn capture_once(port: u16) -> Result<OauthRedirect, String> {
     let listener = TcpListener::bind(("127.0.0.1", port)).map_err(|err| err.to_string())?;
-    let (mut stream, _addr) = listener.accept().map_err(|err| err.to_string())?;
+    listener.set_nonblocking(true).map_err(|err| err.to_string())?;
+
+    let deadline = Instant::now() + CAPTURE_TIMEOUT;
+    loop {
+        if Instant::now() >= deadline {
+            return Err("Timed out waiting for the OAuth redirect".to_string());
+        }
+        match listener.accept() {
+            Ok((stream, _addr)) => {
+                // A connection that doesn't carry both code+state is a favicon
+                // probe, a stray request, or a localhost CSRF poke — answer it
+                // and keep waiting for the genuine redirect rather than letting
+                // it consume our one shot.
+                if let Some(redirect) = handle_connection(stream) {
+                    return Ok(redirect);
+                }
+            }
+            Err(ref err) if err.kind() == ErrorKind::WouldBlock => thread::sleep(POLL_INTERVAL),
+            Err(err) => return Err(err.to_string()),
+        }
+    }
+}
+
+/// Read one HTTP request, reply, and return the `(code, state)` if present.
+fn handle_connection(mut stream: TcpStream) -> Option<OauthRedirect> {
+    // The stream is inherited non-blocking from the listener; restore blocking
+    // reads but bound them with a timeout so a slow client can't hang us.
+    let _ = stream.set_nonblocking(false);
+    let _ = stream.set_read_timeout(Some(READ_TIMEOUT));
 
     let mut buffer = [0u8; 4096];
-    let read = stream.read(&mut buffer).map_err(|err| err.to_string())?;
+    let read = stream.read(&mut buffer).ok()?;
     let request = String::from_utf8_lossy(&buffer[..read]);
 
     // The request line looks like: `GET /?code=...&state=... HTTP/1.1`.
@@ -62,10 +102,27 @@ fn capture_once(port: u16) -> Result<OauthRedirect, String> {
         }
     }
 
-    let html = "<!doctype html><meta charset=utf-8>\
+    let captured = matches!((&code, &state), (Some(_), Some(_)));
+    write_response(&mut stream, captured);
+
+    match (code, state) {
+        (Some(code), Some(state)) => Some(OauthRedirect { code, state }),
+        _ => None,
+    }
+}
+
+/// Send a tiny HTML page so the browser tab shows a sensible result.
+fn write_response(stream: &mut TcpStream, captured: bool) {
+    let html = if captured {
+        "<!doctype html><meta charset=utf-8>\
         <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
         <h2>Signed in \u{2713}</h2>\
-        <p>You can close this tab and return to Noticeable Calendar Alert.</p>";
+        <p>You can close this tab and return to Noticeable Calendar Alert.</p>"
+    } else {
+        "<!doctype html><meta charset=utf-8>\
+        <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
+        <p>Waiting for sign-in\u{2026}</p>"
+    };
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
         html.len(),
@@ -73,11 +130,6 @@ fn capture_once(port: u16) -> Result<OauthRedirect, String> {
     );
     let _ = stream.write_all(response.as_bytes());
     let _ = stream.flush();
-
-    match (code, state) {
-        (Some(code), Some(state)) => Ok(OauthRedirect { code, state }),
-        _ => Err("OAuth redirect was missing code or state".to_string()),
-    }
 }
 
 fn entry() -> Result<Entry, String> {
