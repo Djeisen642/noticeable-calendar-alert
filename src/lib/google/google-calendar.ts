@@ -107,7 +107,7 @@ export class GoogleCalendarSync implements CalendarSync {
       throw new Error(`events.list failed (HTTP ${String(res.status)})`);
     }
 
-    return parseEventsResponse(await res.json(), now);
+    return parseEventsResponse(await res.json());
   }
 
   /** Load the stored token, refreshing it if it has expired. */
