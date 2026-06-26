@@ -7,6 +7,8 @@
  * so the overlay can be developed end-to-end without network or credentials.
  */
 
+import { MS_PER_SECOND, MS_PER_MINUTE, MS_PER_HOUR } from './time.ts';
+
 /** A normalized calendar event, decoupled from Google's wire format. */
 export interface CalendarEvent {
   readonly id: string;
@@ -49,7 +51,9 @@ export interface CalendarSync {
 export class MockCalendarSync implements CalendarSync {
   private readonly secondsUntilMeeting: number;
   /** Re-arm a new meeting this long after the previous one started. */
-  private readonly rearmAfterMs = 5_000;
+  private readonly rearmAfterMs = 5 * MS_PER_SECOND;
+  /** Synthetic meeting length, mirroring the real parser's default. */
+  private readonly meetingDurationMs = 30 * MS_PER_MINUTE;
   private sequence = 0;
   private current: CalendarEvent;
 
@@ -82,12 +86,12 @@ export class MockCalendarSync implements CalendarSync {
 
   private makeEvent(): CalendarEvent {
     this.sequence += 1;
-    const start = new Date(Date.now() + this.secondsUntilMeeting * 1_000);
+    const start = new Date(Date.now() + this.secondsUntilMeeting * MS_PER_SECOND);
     return {
       id: `mock-event-${String(this.sequence).padStart(3, '0')}`,
       title: 'Sprint Planning',
       start,
-      end: new Date(start.getTime() + 30 * 60_000),
+      end: new Date(start.getTime() + this.meetingDurationMs),
       joinUrl: 'https://meet.google.com/abc-defg-hij',
     };
   }
@@ -96,7 +100,7 @@ export class MockCalendarSync implements CalendarSync {
     return {
       accessToken: 'mock-access-token',
       refreshToken: 'mock-refresh-token',
-      expiresAt: new Date(Date.now() + 3_600_000),
+      expiresAt: new Date(Date.now() + MS_PER_HOUR),
       scope: 'https://www.googleapis.com/auth/calendar.events.readonly',
     };
   }

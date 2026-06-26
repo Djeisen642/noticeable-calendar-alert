@@ -5,6 +5,7 @@
  */
 
 import type { OAuthToken } from '../calendar.ts';
+import { MS_PER_SECOND, MS_PER_MINUTE } from '../time.ts';
 
 export interface GoogleOAuthConfig {
   readonly clientId: string;
@@ -92,7 +93,7 @@ export function tokenFromResponse(
   return {
     accessToken: res.access_token,
     refreshToken,
-    expiresAt: new Date(now.getTime() + res.expires_in * 1_000),
+    expiresAt: new Date(now.getTime() + res.expires_in * MS_PER_SECOND),
     scope: res.scope,
   };
 }
@@ -101,6 +102,6 @@ export function tokenFromResponse(
  * Whether a token should be considered expired. A skew window means we refresh
  * slightly early rather than racing the exact expiry instant.
  */
-export function isTokenExpired(expiresAt: Date, now: Date, skewMs = 60_000): boolean {
+export function isTokenExpired(expiresAt: Date, now: Date, skewMs = MS_PER_MINUTE): boolean {
   return expiresAt.getTime() - skewMs <= now.getTime();
 }

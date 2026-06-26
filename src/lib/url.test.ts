@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { safeExternalUrl } from './url.ts';
+import { safeExternalUrl, safeJoinUrl } from './url.ts';
 
 describe('safeExternalUrl', () => {
   it('accepts https URLs and returns a normalized href', () => {
@@ -32,5 +32,37 @@ describe('safeExternalUrl', () => {
   it('rejects null and undefined', () => {
     expect(safeExternalUrl(null)).toBeNull();
     expect(safeExternalUrl(undefined)).toBeNull();
+  });
+});
+
+describe('safeJoinUrl', () => {
+  it.each([
+    'https://meet.google.com/abc-defg-hij',
+    'https://us02web.zoom.us/j/123456789',
+    'https://teams.microsoft.com/l/meetup-join/xyz',
+    'https://acme.webex.com/meet/room',
+    'https://meet.jit.si/SomeRoom',
+  ])('accepts a known conferencing host: %s', (url) => {
+    expect(safeJoinUrl(url)).toBe(url);
+  });
+
+  it.each([
+    ['unknown host', 'https://evil.example/login'],
+    ['google phishing lookalike', 'https://accounts-google.evil.com/login'],
+    // Suffix-spoof: host ENDS with the brand but is a different registrable domain.
+    ['suffix spoof', 'https://zoom.us.evil.com/join'],
+    ['bare http to unknown host', 'http://example.com/join'],
+  ])('rejects %s', (_label, url) => {
+    expect(safeJoinUrl(url)).toBeNull();
+  });
+
+  it('still rejects non-http(s) schemes even on an allowed host', () => {
+    expect(safeJoinUrl('javascript:alert(1)//meet.google.com')).toBeNull();
+  });
+
+  it('rejects null/undefined/garbage', () => {
+    expect(safeJoinUrl(null)).toBeNull();
+    expect(safeJoinUrl(undefined)).toBeNull();
+    expect(safeJoinUrl('not a url')).toBeNull();
   });
 });

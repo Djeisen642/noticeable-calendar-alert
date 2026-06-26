@@ -5,10 +5,11 @@
  */
 
 import type { CalendarEvent } from '../calendar.ts';
-import { safeExternalUrl } from '../url.ts';
+import { safeJoinUrl } from '../url.ts';
+import { MS_PER_MINUTE } from '../time.ts';
 
 const EVENTS_ENDPOINT = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
-const DEFAULT_MEETING_MS = 30 * 60_000;
+const DEFAULT_MEETING_MS = 30 * MS_PER_MINUTE;
 
 /** Build the `events.list` request URL for the lookahead window. */
 export function buildEventsListUrl(now: Date, withinMs: number, maxResults = 10): string {
@@ -32,16 +33,30 @@ function asString(value: unknown): string | undefined {
 
 /** Pull a join URL from conferenceData entry points, falling back to hangoutLink. */
 function extractJoinUrl(item: Record<string, unknown>): string | null {
+  const candidates: string[] = [];
+
   const conference = item.conferenceData;
   if (isRecord(conference) && Array.isArray(conference.entryPoints)) {
     for (const entry of conference.entryPoints) {
       if (isRecord(entry) && entry.entryPointType === 'video') {
-        const safe = safeExternalUrl(asString(entry.uri));
-        if (safe) return safe;
+        const uri = asString(entry.uri);
+        if (uri) candidates.push(uri);
       }
     }
   }
-  return safeExternalUrl(asString(item.hangoutLink));
+  const hangout = asString(item.hangoutLink);
+  if (hangout) candidates.push(hangout);
+
+  for (const candidate of candidates) {
+    const safe = safeJoinUrl(candidate);
+    if (safe) return safe;
+  }
+  // A link was present but blocked by the host allowlist. Surface it so a
+  // legitimate-but-unlisted provider doesn't just silently lose its Join button.
+  if (candidates.length > 0) {
+    console.warn('Ignoring meeting join link(s) from unrecognized host(s):', candidates);
+  }
+  return null;
 }
 
 /** Resolve an event's start/end as timed instants, or `null` for all-day. */
@@ -64,7 +79,7 @@ function timedRange(item: Record<string, unknown>): { start: Date; end: Date } |
  * Map a raw `events.list` payload to normalized events, dropping cancelled and
  * all-day entries, sorted soonest-first.
  */
-export function parseEventsResponse(payload: unknown, _now: Date = new Date()): CalendarEvent[] {
+export function parseEventsResponse(payload: unknown): CalendarEvent[] {
   if (!isRecord(payload) || !Array.isArray(payload.items)) {
     return [];
   }

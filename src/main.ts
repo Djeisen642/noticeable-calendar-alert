@@ -16,6 +16,7 @@ import {
   shouldAlert,
   type CountdownDelta,
 } from './lib/countdown.ts';
+import { MS_PER_SECOND, MS_PER_MINUTE } from './lib/time.ts';
 import {
   setClickThrough,
   openExternal,
@@ -32,9 +33,9 @@ const LEAD_TIME_MINUTES = 5;
  * Calendar API is rate-limited, so we cache results and never fetch on the UI
  * cadence.
  */
-const FETCH_INTERVAL_MS = 30_000;
+const FETCH_INTERVAL_MS = 30 * MS_PER_SECOND;
 /** How often to refresh the countdown UI from the cached event. No network. */
-const TICK_INTERVAL_MS = 1_000;
+const TICK_INTERVAL_MS = MS_PER_SECOND;
 
 /** Resolve a required element or fail loudly at startup. */
 function mustGet<T extends HTMLElement>(id: string): T {
@@ -106,7 +107,7 @@ class AlertController {
   /** Slow path: refresh the cached event from the calendar API. */
   async refresh(): Promise<void> {
     try {
-      const events = await this.calendar.getUpcomingEvents(LEAD_TIME_MINUTES * 60_000);
+      const events = await this.calendar.getUpcomingEvents(LEAD_TIME_MINUTES * MS_PER_MINUTE);
       this.next = events.at(0) ?? null;
     } catch (error) {
       console.error('Calendar refresh failed', error);

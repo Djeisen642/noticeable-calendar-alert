@@ -5,8 +5,9 @@
 //! live OAuth round-trip and the OS keychain access must be verified on a real
 //! machine (Windows Credential Manager / macOS Keychain / Linux Secret Service).
 
-use std::io::{Read, Write};
+use std::io::{ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::thread;
 use std::time::{Duration, Instant};
 
 use keyring::Entry;
@@ -15,17 +16,15 @@ use serde::Serialize;
 const KEYCHAIN_SERVICE: &str = "noticeable-calendar-alert";
 const KEYCHAIN_ACCOUNT: &str = "google-oauth-token";
 
-/// Give up if the redirect never arrives (user cancelled, browser failed, …)
-/// so the listener thread and the bound port are always reclaimed.
+/// How long to wait for the browser to deliver the OAuth redirect before giving
+/// up. Without this the accept() would block forever if the user closes the
+/// consent tab, leaking the thread *and* keeping the port bound so the next
+/// sign-in attempt fails with "address in use".
 const CAPTURE_TIMEOUT: Duration = Duration::from_secs(180);
-/// How long a single connected client may take to send its request line.
-const CLIENT_READ_TIMEOUT: Duration = Duration::from_secs(5);
-const ACCEPT_POLL_INTERVAL: Duration = Duration::from_millis(100);
-
-const SUCCESS_HTML: &str = "<!doctype html><meta charset=utf-8>\
-    <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
-    <h2>Signed in \u{2713}</h2>\
-    <p>You can close this tab and return to Noticeable Calendar Alert.</p>";
+/// Idle poll interval while waiting on the non-blocking listener.
+const POLL_INTERVAL: Duration = Duration::from_millis(100);
+/// Cap a single client read so a slow/partial connection can't wedge the loop.
+const READ_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Serialize)]
 pub struct OauthRedirect {
@@ -48,10 +47,6 @@ fn capture_once(port: u16) -> Result<OauthRedirect, String> {
     let listener = TcpListener::bind(("127.0.0.1", port)).map_err(|err| err.to_string())?;
     listener.set_nonblocking(true).map_err(|err| err.to_string())?;
 
-    // Accept connections until one carries the redirect, or we time out. This
-    // tolerates stray local probes (favicon requests, port scanners) that would
-    // otherwise derail a single blocking accept, and guarantees the thread/port
-    // are released even if the user never completes consent.
     let deadline = Instant::now() + CAPTURE_TIMEOUT;
     loop {
         if Instant::now() >= deadline {
@@ -59,24 +54,26 @@ fn capture_once(port: u16) -> Result<OauthRedirect, String> {
         }
         match listener.accept() {
             Ok((stream, _addr)) => {
+                // A connection that doesn't carry both code+state is a favicon
+                // probe, a stray request, or a localhost CSRF poke — answer it
+                // and keep waiting for the genuine redirect rather than letting
+                // it consume our one shot.
                 if let Some(redirect) = handle_connection(stream) {
                     return Ok(redirect);
                 }
-                // No code in this request — keep waiting for the real redirect.
             }
-            Err(ref err) if err.kind() == std::io::ErrorKind::WouldBlock => {
-                std::thread::sleep(ACCEPT_POLL_INTERVAL);
-            }
+            Err(ref err) if err.kind() == ErrorKind::WouldBlock => thread::sleep(POLL_INTERVAL),
             Err(err) => return Err(err.to_string()),
         }
     }
 }
 
-/// Read one HTTP request and, if it carries `code` + `state`, answer with the
-/// success page and return them. Returns `None` for anything else.
+/// Read one HTTP request, reply, and return the `(code, state)` if present.
 fn handle_connection(mut stream: TcpStream) -> Option<OauthRedirect> {
+    // The stream is inherited non-blocking from the listener; restore blocking
+    // reads but bound them with a timeout so a slow client can't hang us.
     let _ = stream.set_nonblocking(false);
-    let _ = stream.set_read_timeout(Some(CLIENT_READ_TIMEOUT));
+    let _ = stream.set_read_timeout(Some(READ_TIMEOUT));
 
     let mut buffer = [0u8; 4096];
     let read = stream.read(&mut buffer).ok()?;
@@ -105,17 +102,34 @@ fn handle_connection(mut stream: TcpStream) -> Option<OauthRedirect> {
         }
     }
 
-    let (code, state) = (code?, state?);
+    let captured = matches!((&code, &state), (Some(_), Some(_)));
+    write_response(&mut stream, captured);
 
+    match (code, state) {
+        (Some(code), Some(state)) => Some(OauthRedirect { code, state }),
+        _ => None,
+    }
+}
+
+/// Send a tiny HTML page so the browser tab shows a sensible result.
+fn write_response(stream: &mut TcpStream, captured: bool) {
+    let html = if captured {
+        "<!doctype html><meta charset=utf-8>\
+        <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
+        <h2>Signed in \u{2713}</h2>\
+        <p>You can close this tab and return to Noticeable Calendar Alert.</p>"
+    } else {
+        "<!doctype html><meta charset=utf-8>\
+        <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
+        <p>Waiting for sign-in\u{2026}</p>"
+    };
     let response = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-        SUCCESS_HTML.len(),
-        SUCCESS_HTML
+        html.len(),
+        html
     );
     let _ = stream.write_all(response.as_bytes());
     let _ = stream.flush();
-
-    Some(OauthRedirect { code, state })
 }
 
 fn entry() -> Result<Entry, String> {

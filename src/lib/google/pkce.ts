@@ -8,17 +8,27 @@
 // Unreserved characters allowed in a PKCE `code_verifier` (RFC 7636 §4.1).
 const VERIFIER_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
 
+// Largest multiple of the charset size that fits in a byte. Random bytes at or
+// above this are rejected so that `byte % charset` is uniform (no modulo bias).
+const VERIFIER_REJECT_AT = 256 - (256 % VERIFIER_CHARSET.length);
+
 /** Generate a high-entropy `code_verifier` of the given length (43–128). */
 export function generateCodeVerifier(length = 64): string {
   if (length < 43 || length > 128) {
     throw new RangeError('PKCE code_verifier length must be between 43 and 128');
   }
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
 
   let verifier = '';
-  for (const byte of bytes) {
-    verifier += VERIFIER_CHARSET[byte % VERIFIER_CHARSET.length];
+  // Draw a small batch at a time and rejection-sample to keep the distribution
+  // uniform across the 66-char set; refill if we reject our way to the end.
+  while (verifier.length < length) {
+    const batch = new Uint8Array(length - verifier.length);
+    crypto.getRandomValues(batch);
+    for (const byte of batch) {
+      if (byte >= VERIFIER_REJECT_AT) continue;
+      verifier += VERIFIER_CHARSET[byte % VERIFIER_CHARSET.length];
+      if (verifier.length === length) break;
+    }
   }
   return verifier;
 }
