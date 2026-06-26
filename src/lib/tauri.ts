@@ -7,6 +7,8 @@
  * outside the desktop shell.
  */
 
+import { safeExternalUrl } from './url.ts';
+
 /** `true` only when running inside the Tauri webview. */
 export function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -27,15 +29,26 @@ export async function setClickThrough(enabled: boolean): Promise<void> {
   await invoke('set_click_through', { enabled });
 }
 
-/** Open a URL in the user's default browser via the opener plugin. */
+/**
+ * Open a URL in the user's default browser via the opener plugin.
+ *
+ * The URL is validated first: it originates from untrusted calendar data, so
+ * only http(s) links are ever handed to the OS.
+ */
 export async function openExternal(url: string): Promise<void> {
+  const safe = safeExternalUrl(url);
+  if (safe === null) {
+    console.warn('Refusing to open untrusted or malformed URL:', url);
+    return;
+  }
+
   if (!isTauri()) {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(safe, '_blank', 'noopener,noreferrer');
     return;
   }
 
   const { openUrl } = await import('@tauri-apps/plugin-opener');
-  await openUrl(url);
+  await openUrl(safe);
 }
 
 /** Hide the overlay window (Tauri only; a no-op in the browser). */
