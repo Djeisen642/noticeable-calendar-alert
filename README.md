@@ -78,13 +78,74 @@ npm run tauri icon path/to/source-1024.png
 Git hooks are managed by [Lefthook](https://lefthook.dev): on every commit,
 staged files are auto-formatted, lint-fixed, and the project is type-checked.
 
-## Google Calendar integration
+## Connecting Google Calendar
 
-The calendar layer currently ships a `MockCalendarSync` that synthesizes a
-meeting a few seconds out so the overlay can be exercised on demand. The real
-implementation will swap in a `GoogleCalendarSync` that performs an OAuth 2.0
-PKCE flow and reads `events.list` — see the `CalendarSync` interface in
-[`src/lib/calendar.ts`](src/lib/calendar.ts).
+Without credentials the app uses a deterministic `MockCalendarSync`, so
+`npm run dev` works out of the box. To read your real calendar, create a Google
+OAuth **Desktop app** client and point the app at it.
+
+### 1. Create the OAuth client
+
+1. Open the [Google Cloud Console](https://console.cloud.google.com/) and create
+   (or pick) a project.
+2. **APIs & Services → Library →** enable the **Google Calendar API**.
+3. **APIs & Services → OAuth consent screen**:
+   - **User type: External**, and leave **Publishing status: Testing**.
+   - Add the scope `https://www.googleapis.com/auth/calendar.events.readonly`.
+   - Under **Test users**, add the Google address you'll sign in with. Testing
+     mode allows up to 100 test users with no Google verification review.
+4. **APIs & Services → Credentials → Create credentials → OAuth client ID →
+   Application type: Desktop app.** Copy the **client ID** and **client secret**.
+
+> For a Desktop-app client the "secret" is **not** confidential — Google says so,
+> and PKCE provides the real protection. It still lives only in your gitignored
+> `.env`.
+
+### 2. Configure the app
+
+```bash
+cp .env.example .env
+# then fill in:
+#   VITE_GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+#   VITE_GOOGLE_CLIENT_SECRET=...
+#   VITE_OAUTH_REDIRECT_PORT=1421   # optional; must be free
+```
+
+### 3. Sign in
+
+```bash
+npm run tauri dev
+```
+
+Then use the tray menu → **Sign in with Google**. The system browser opens
+Google's consent screen; after you approve, a one-time loopback listener on
+`127.0.0.1:<port>` captures the redirect and the app exchanges it for tokens.
+The refresh token is stored in your **OS keychain** (Windows Credential Manager
+/ macOS Keychain / Linux Secret Service) — never on disk in plaintext. The
+access token is refreshed silently; you only re-consent if you revoke access.
+
+### Using a work (Google Workspace) account
+
+The code works with any account — your **primary** calendar is what's read, and
+the scope is read-only. The gatekeeper is your **org's admin policy**, not the
+app:
+
+- You may see **"Access blocked: app not verified."** For your own app you can
+  normally click **Advanced → continue**, but an admin can disable that.
+- You may see an **org-policy block** if IT restricts unverified third-party
+  apps. Then they must allowlist the client ID under **Admin console → Security →
+  API controls → App access control**, or add you as a test user where allowed.
+
+Also confirm your company's data policy permits connecting calendar data to a
+self-built app before doing so.
+
+### Code map
+
+See the `CalendarSync` interface in [`src/lib/calendar.ts`](src/lib/calendar.ts)
+and the implementation under [`src/lib/google/`](src/lib/google/). All OAuth and
+parsing logic is unit-tested; the native adapters (`adapters.ts`,
+`src-tauri/src/oauth.rs`) are reviewed-but-unrun until exercised on a desktop —
+see `CLAUDE.md`.
 
 ## License
 
