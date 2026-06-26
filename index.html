@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noticeable Calendar Alert</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <!-- The stage fills the transparent, click-through overlay window. -->
+    <main id="stage" class="stage">
+      <!-- Speech bubble: hidden until the character has walked in and waved. -->
+      <section
+        id="bubble"
+        class="bubble is-hidden"
+        role="dialog"
+        aria-live="assertive"
+        aria-label="Upcoming meeting reminder"
+      >
+        <p id="bubble-title" class="bubble__title">Meeting</p>
+        <p id="bubble-time" class="bubble__time">in 5m</p>
+        <button id="join-button" class="bubble__join" type="button">Join Call</button>
+        <span class="bubble__tail" aria-hidden="true"></span>
+      </section>
+
+      <!-- Vector character. The #arm group is what waves. -->
+      <div id="character" class="character is-offscreen" data-state="idle" aria-hidden="true">
+        <svg viewBox="0 0 120 180" width="120" height="180" xmlns="http://www.w3.org/2000/svg">
+          <!-- Legs -->
+          <g class="character__legs">
+            <rect x="44" y="130" width="12" height="40" rx="6" fill="#3b3b5c" />
+            <rect x="64" y="130" width="12" height="40" rx="6" fill="#2f2f4a" />
+          </g>
+          <!-- Body -->
+          <rect x="34" y="70" width="52" height="68" rx="22" fill="#5b8def" />
+          <!-- Waving arm (rotates around the shoulder) -->
+          <g id="arm" class="character__arm">
+            <rect x="80" y="74" width="12" height="40" rx="6" fill="#4a78d8" />
+            <circle cx="86" cy="116" r="9" fill="#ffd9a0" />
+          </g>
+          <!-- Resting arm -->
+          <rect x="28" y="78" width="12" height="38" rx="6" fill="#4a78d8" />
+          <!-- Head -->
+          <circle cx="60" cy="44" r="30" fill="#ffd9a0" />
+          <!-- Eyes -->
+          <circle class="character__eye" cx="50" cy="42" r="4" fill="#2b2b3a" />
+          <circle class="character__eye" cx="70" cy="42" r="4" fill="#2b2b3a" />
+          <!-- Smile -->
+          <path
+            d="M48 54 Q60 64 72 54"
+            stroke="#2b2b3a"
+            stroke-width="3"
+            fill="none"
+            stroke-linecap="round"
+          />
+        </svg>
+      </div>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

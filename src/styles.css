@@ -1,0 +1,190 @@
+/*
+ * Overlay styling.
+ *
+ * The window itself is transparent (configured in tauri.conf.json), so the
+ * page background MUST stay transparent too. All motion is expressed as GPU-
+ * friendly transform/opacity changes — never layout properties — to keep the
+ * animation buttery and the CPU idle.
+ */
+
+:root {
+  --bubble-bg: rgba(255, 255, 255, 0.97);
+  --bubble-fg: #1f2330;
+  --accent: #5b8def;
+  --accent-strong: #3f6fd6;
+  --walk-duration: 1100ms;
+  --walk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  /* Let clicks fall through empty areas even in the browser dev preview. */
+  pointer-events: none;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  user-select: none;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Character ---------- */
+
+.character {
+  position: absolute;
+  right: 16px;
+  bottom: 8px;
+  width: 120px;
+  height: 180px;
+  /* Start parked off the right edge; .is-onstage slides it in. */
+  transform: translateX(160%);
+  transition: transform var(--walk-duration) var(--walk-ease);
+  will-change: transform;
+}
+
+.character.is-offscreen {
+  transform: translateX(160%);
+}
+
+.character.is-onstage {
+  transform: translateX(0);
+}
+
+/* A subtle vertical bob while walking sells the footsteps. */
+.character[data-state='walking'] svg {
+  animation: bob 280ms ease-in-out infinite;
+}
+
+/* Waving: rotate just the arm group around the shoulder. */
+.character[data-state='waving'] #arm {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: wave 600ms ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-24deg);
+  }
+  75% {
+    transform: rotate(18deg);
+  }
+}
+
+/* ---------- Speech bubble ---------- */
+
+.bubble {
+  position: absolute;
+  right: 140px;
+  bottom: 96px;
+  min-width: 200px;
+  max-width: 280px;
+  padding: 16px 18px;
+  background: var(--bubble-bg);
+  color: var(--bubble-fg);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  /* The bubble is the one interactive surface. */
+  pointer-events: auto;
+  /* Fade + lift in. */
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  transition:
+    opacity 320ms ease,
+    transform 320ms ease;
+}
+
+.bubble.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.bubble.is-hidden {
+  display: none;
+}
+
+.bubble__title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.bubble__time {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #5a6072;
+}
+
+.bubble__join {
+  display: inline-block;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.bubble__join:hover {
+  background: var(--accent-strong);
+}
+
+.bubble__join:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+
+/* Little tail pointing toward the character. */
+.bubble__tail {
+  position: absolute;
+  right: -10px;
+  bottom: 22px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 12px solid var(--bubble-bg);
+}
+
+/* Respect users who ask the OS to minimize motion. */
+@media (prefers-reduced-motion: reduce) {
+  .character,
+  .character[data-state='walking'] svg,
+  .character[data-state='waving'] #arm,
+  .bubble {
+    transition-duration: 1ms;
+    animation: none;
+  }
+}
