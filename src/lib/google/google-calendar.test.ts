@@ -165,9 +165,9 @@ describe('getUpcomingEvents', () => {
     };
     http.queuePost(jsonResponse(400, { error: 'invalid_grant' }));
 
-    // The poll surfaces no events rather than crashing the caller...
+    // A dead refresh token (400 invalid_grant) propagates as an error...
     await expect(sync.getUpcomingEvents(300_000)).rejects.toThrow(/HTTP 400/);
-    // ...and the dead refresh token is gone, so the next poll won't retry it.
+    // ...but the dead token is cleared, so the next poll won't retry it.
     expect(store.token).toBeNull();
   });
 
