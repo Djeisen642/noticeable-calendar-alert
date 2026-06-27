@@ -63,6 +63,11 @@ export class GoogleCalendarSync implements CalendarSync {
     await this.store.clear();
   }
 
+  /** Whether a token is currently persisted (i.e. the user has signed in). */
+  async isSignedIn(): Promise<boolean> {
+    return (await this.store.load()) !== null;
+  }
+
   /** Exchange a refresh token for a fresh access token and persist it. */
   async refresh(token: OAuthToken): Promise<OAuthToken> {
     const res = await this.http.postForm(

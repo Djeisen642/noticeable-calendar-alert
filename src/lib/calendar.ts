@@ -38,6 +38,8 @@ export interface CalendarSync {
   refresh(token: OAuthToken): Promise<OAuthToken>;
   /** Forget any stored credentials so the next sync requires re-consent. */
   signOut(): Promise<void>;
+  /** Whether a credential is currently stored, so the UI can reflect state. */
+  isSignedIn(): Promise<boolean>;
   /** Events starting within the next `withinMs` milliseconds, soonest first. */
   getUpcomingEvents(withinMs: number): Promise<CalendarEvent[]>;
 }
@@ -56,6 +58,8 @@ export class MockCalendarSync implements CalendarSync {
   private readonly meetingDurationMs = 30 * MS_PER_MINUTE;
   private sequence = 0;
   private current: CalendarEvent;
+  /** Tracks the simulated auth state so the tray toggle reflects sign-in. */
+  private signedIn = false;
 
   constructor(secondsUntilMeeting = 8) {
     this.secondsUntilMeeting = secondsUntilMeeting;
@@ -64,11 +68,17 @@ export class MockCalendarSync implements CalendarSync {
   }
 
   authenticate(): Promise<OAuthToken> {
+    this.signedIn = true;
     return Promise.resolve(this.fakeToken());
   }
 
   signOut(): Promise<void> {
+    this.signedIn = false;
     return Promise.resolve();
+  }
+
+  isSignedIn(): Promise<boolean> {
+    return Promise.resolve(this.signedIn);
   }
 
   refresh(_token: OAuthToken): Promise<OAuthToken> {

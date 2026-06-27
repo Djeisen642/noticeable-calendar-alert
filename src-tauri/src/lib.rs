@@ -6,6 +6,20 @@ use tauri::{
     Emitter, Manager, WebviewWindow,
 };
 
+/// Holds the single tray auth item so the frontend can relabel it as the
+/// sign-in state changes (e.g. flip to "Sign out" after a successful sign-in).
+struct AuthMenuItem(MenuItem<tauri::Wry>);
+
+/// Relabel the tray auth item to reflect the current sign-in state.
+///
+/// The frontend owns the auth state and the label text (see `lib/tray.ts`); we
+/// just apply it. `MenuItem` exposes `set_text` but not per-item visibility, so
+/// a single toggling item is how we avoid showing sign-in *and* sign-out at once.
+#[tauri::command]
+fn set_auth_menu_label(label: String, item: tauri::State<'_, AuthMenuItem>) -> Result<(), String> {
+    item.0.set_text(label).map_err(|err| err.to_string())
+}
+
 /// Toggle mouse click-through for a window.
 ///
 /// When `enabled` is `true`, the window ignores cursor events so clicks pass
@@ -26,6 +40,7 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .invoke_handler(tauri::generate_handler![
             set_click_through,
+            set_auth_menu_label,
             oauth::oauth_capture,
             oauth::token_save,
             oauth::token_load,
@@ -33,25 +48,27 @@ pub fn run() {
         ])
         .setup(|app| {
             // --- System tray ---------------------------------------------------
-            let signin_item =
-                MenuItem::with_id(app, "signin", "Sign in with Google", true, None::<&str>)?;
-            let signout_item =
-                MenuItem::with_id(app, "signout", "Sign out", true, None::<&str>)?;
+            // A single item toggles between sign-in and sign-out. The frontend
+            // relabels it via `set_auth_menu_label` as the state changes, so the
+            // menu never shows both actions at once.
+            let auth_item =
+                MenuItem::with_id(app, "auth", "Sign in with Google", true, None::<&str>)?;
             let show_item = MenuItem::with_id(app, "show", "Test Overlay", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&signin_item, &signout_item, &show_item, &quit_item])?;
+            let menu = Menu::with_items(app, &[&auth_item, &show_item, &quit_item])?;
+
+            // Keep a handle to the auth item so the relabel command can find it.
+            app.manage(AuthMenuItem(auth_item.clone()));
 
             let mut tray = TrayIconBuilder::with_id("main-tray")
                 .tooltip("Noticeable Calendar Alert")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => app.exit(0),
-                    "signin" => {
-                        // The overlay webview runs the interactive OAuth flow.
-                        let _ = app.emit("google-signin", ());
-                    }
-                    "signout" => {
-                        let _ = app.emit("google-signout", ());
+                    "auth" => {
+                        // The overlay webview decides sign-in vs sign-out from
+                        // its own state and runs the interactive OAuth flow.
+                        let _ = app.emit("google-auth-toggle", ());
                     }
                     "show" => {
                         if let Some(window) = app.get_webview_window("overlay") {

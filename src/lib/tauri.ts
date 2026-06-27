@@ -70,24 +70,26 @@ export async function showOverlay(): Promise<void> {
 }
 
 /**
- * Subscribe to the tray's "Sign in with Google" menu event. A no-op in the
- * browser, where there is no tray.
+ * Subscribe to the tray's auth menu event. The single item toggles between
+ * sign-in and sign-out; the frontend decides which based on current state. A
+ * no-op in the browser, where there is no tray.
  */
-export async function onSignInRequested(handler: () => void): Promise<void> {
+export async function onAuthToggleRequested(handler: () => void): Promise<void> {
   if (!isTauri()) return;
 
   const { listen } = await import('@tauri-apps/api/event');
-  await listen('google-signin', () => {
+  await listen('google-auth-toggle', () => {
     handler();
   });
 }
 
-/** Subscribe to the tray's "Sign out" menu event. A no-op in the browser. */
-export async function onSignOutRequested(handler: () => void): Promise<void> {
+/**
+ * Update the tray auth item's label so it reflects the current sign-in state
+ * (e.g. flips to "Sign out" after a successful sign-in). A no-op in the browser.
+ */
+export async function setAuthMenuLabel(label: string): Promise<void> {
   if (!isTauri()) return;
 
-  const { listen } = await import('@tauri-apps/api/event');
-  await listen('google-signout', () => {
-    handler();
-  });
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('set_auth_menu_label', { label });
 }

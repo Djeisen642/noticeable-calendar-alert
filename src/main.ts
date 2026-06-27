@@ -12,14 +12,15 @@ import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, formatCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent } from './lib/alert.ts';
+import { authMenuLabel, authToggleAction } from './lib/tray.ts';
 import { MS_PER_SECOND, MS_PER_MINUTE } from './lib/time.ts';
 import {
   setClickThrough,
   openExternal,
   showOverlay,
   hideOverlay,
-  onSignInRequested,
-  onSignOutRequested,
+  onAuthToggleRequested,
+  setAuthMenuLabel,
 } from './lib/tauri.ts';
 
 /** How far ahead of a meeting to fire the overlay. */
@@ -79,6 +80,24 @@ class AlertController {
       if (url) void openExternal(url);
       void this.runExclusive(() => this.dismiss());
     });
+  }
+
+  /**
+   * Handle the tray's single auth item: sign in when signed out, otherwise sign
+   * out. The label is resynced afterward so the menu always reflects state.
+   */
+  async toggleAuth(): Promise<void> {
+    if (authToggleAction(await this.calendar.isSignedIn()) === 'signOut') {
+      await this.signOut();
+    } else {
+      await this.signIn();
+    }
+    await this.syncAuthMenu();
+  }
+
+  /** Push the current sign-in state to the tray menu label. */
+  async syncAuthMenu(): Promise<void> {
+    await setAuthMenuLabel(authMenuLabel(await this.calendar.isSignedIn()));
   }
 
   /** Run the interactive Google sign-in, then refresh immediately. */
@@ -188,9 +207,10 @@ function bootstrap(): void {
   const calendar = createCalendarSync();
   const controller = new AlertController(calendar, animator, elements);
 
-  // The tray "Sign in / Sign out" items emit these events.
-  void onSignInRequested(() => void controller.signIn());
-  void onSignOutRequested(() => void controller.signOut());
+  // The tray's single auth item toggles sign-in/out; sync its label to the
+  // current state up front (e.g. "Sign out" when a token is already stored).
+  void onAuthToggleRequested(() => void controller.toggleAuth());
+  void controller.syncAuthMenu();
 
   // Slow cadence: fetch the calendar. Fast cadence: tick the countdown UI.
   void controller.refresh();
