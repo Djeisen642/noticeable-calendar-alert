@@ -70,17 +70,32 @@ export async function showOverlay(): Promise<void> {
 }
 
 /**
- * Subscribe to the tray's auth menu event. The single item toggles between
- * sign-in and sign-out; the frontend decides which based on current state. A
+ * Subscribe to a tray-emitted event, dynamic-importing the Tauri event API. A
  * no-op in the browser, where there is no tray.
  */
-export async function onAuthToggleRequested(handler: () => void): Promise<void> {
+async function onTrayEvent(event: string, handler: () => void): Promise<void> {
   if (!isTauri()) return;
 
   const { listen } = await import('@tauri-apps/api/event');
-  await listen('google-auth-toggle', () => {
+  await listen(event, () => {
     handler();
   });
+}
+
+/**
+ * Subscribe to the tray's auth menu event. The single item toggles between
+ * sign-in and sign-out; the frontend decides which based on current state.
+ */
+export function onAuthToggleRequested(handler: () => void): Promise<void> {
+  return onTrayEvent('google-auth-toggle', handler);
+}
+
+/**
+ * Subscribe to the tray's "Sync now" menu event, which forces an immediate
+ * calendar refresh outside the adaptive poll cadence.
+ */
+export function onSyncNowRequested(handler: () => void): Promise<void> {
+  return onTrayEvent('sync-now', handler);
 }
 
 /**

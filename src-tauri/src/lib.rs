@@ -91,6 +91,7 @@ pub fn run() {
             let separator = PredefinedMenuItem::separator(app)?;
             let auth_item =
                 MenuItem::with_id(app, "auth", "Sign in with Google", true, None::<&str>)?;
+            let sync_item = MenuItem::with_id(app, "sync", "Sync now", true, None::<&str>)?;
             let show_item = MenuItem::with_id(app, "show", "Test Overlay", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(
@@ -100,6 +101,7 @@ pub fn run() {
                     &status_meeting,
                     &separator,
                     &auth_item,
+                    &sync_item,
                     &show_item,
                     &quit_item,
                 ],
@@ -122,6 +124,11 @@ pub fn run() {
                         // The overlay webview decides sign-in vs sign-out from
                         // its own state and runs the interactive OAuth flow.
                         let _ = app.emit("google-auth-toggle", ());
+                    }
+                    "sync" => {
+                        // Force an immediate calendar refresh, bypassing the
+                        // adaptive poll timer. The webview owns the fetch.
+                        let _ = app.emit("sync-now", ());
                     }
                     "show" => {
                         if let Some(window) = app.get_webview_window("overlay") {

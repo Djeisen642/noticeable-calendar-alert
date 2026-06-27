@@ -22,6 +22,7 @@ import {
   showOverlay,
   hideOverlay,
   onAuthToggleRequested,
+  onSyncNowRequested,
   setAuthMenuLabel,
   setTrayStatus,
   showError,
@@ -29,6 +30,15 @@ import {
 
 /** How far ahead of a meeting to fire the overlay. */
 const LEAD_TIME_MINUTES = 5;
+/**
+ * How far ahead to fetch events. This is deliberately *much* wider than the
+ * alert lead: `this.next` feeds both the tray "next meeting" line and the
+ * adaptive poll cadence (`nextFetchDelayMs`, which scales from "within the hour"
+ * down to idle), so it must surface the soonest meeting whenever it is — not
+ * only once it's inside the 5-minute alert window. `tick()`/`shouldPresent`
+ * still gate the actual overlay on `LEAD_TIME_MINUTES`.
+ */
+const FETCH_HORIZON_MINUTES = 24 * 60;
 /** How often to refresh the countdown UI from the cached event. No network. */
 const TICK_INTERVAL_MS = MS_PER_SECOND;
 
@@ -67,8 +77,19 @@ class AlertController {
   private next: CalendarEvent | null = null;
   /** Outcome of the most recent calendar fetch, for the tray sync-health line. */
   private lastSync: SyncState | null = null;
+  /** Cached sign-in state so the per-second status re-render needs no keychain. */
+  private signedIn = false;
+  /** Last text pushed to each tray line, so we only re-push when it changes. */
+  private lastConnection: string | null = null;
+  private lastMeeting: string | null = null;
   /** True while a present/dismiss animation is in flight (mutual exclusion). */
   private busy = false;
+  /** True while a calendar fetch is in flight, so fetches never overlap. */
+  private refreshing = false;
+  /** True while the adaptive poll loop is active (paused while signed out). */
+  private polling = false;
+  /** Pending poll-loop timer, so it can be cancelled on sign-out. */
+  private pollTimer: number | undefined;
 
   constructor(calendar: CalendarSync, animator: OverlayAnimator, elements: OverlayElements) {
     this.calendar = calendar;
@@ -97,26 +118,38 @@ class AlertController {
 
   /** Push the current sign-in state to the tray menu label and status lines. */
   async syncAuthMenu(): Promise<void> {
-    await setAuthMenuLabel(authMenuLabel(await this.calendar.isSignedIn()));
-    await this.updateStatus();
+    this.signedIn = await this.calendar.isSignedIn();
+    await setAuthMenuLabel(authMenuLabel(this.signedIn));
+    this.updateStatus();
   }
 
-  /** Recompute the two tray status lines from cached state. No network. */
-  async updateStatus(): Promise<void> {
+  /**
+   * Re-render the two tray status lines from cached state and push them only if
+   * the text changed. No network or I/O, so it's cheap to call every tick — that
+   * keeps the next-meeting countdown live, so it's current the instant the menu
+   * is opened (visibility of system status) without spamming identical updates.
+   */
+  updateStatus(): void {
     const status = formatTrayStatus({
-      signedIn: await this.calendar.isSignedIn(),
+      signedIn: this.signedIn,
       lastSync: this.lastSync,
       next: this.next === null ? null : { title: this.next.title, start: this.next.start },
       now: new Date(),
     });
-    await setTrayStatus(status.connection, status.meeting);
+    if (status.connection === this.lastConnection && status.meeting === this.lastMeeting) {
+      return;
+    }
+    this.lastConnection = status.connection;
+    this.lastMeeting = status.meeting;
+    void setTrayStatus(status.connection, status.meeting);
   }
 
-  /** Run the interactive Google sign-in, then refresh immediately. */
+  /** Run the interactive Google sign-in, then start polling immediately. */
   async signIn(): Promise<void> {
     try {
       await this.calendar.authenticate();
-      await this.refresh();
+      this.signedIn = true;
+      this.startPolling(); // immediate fetch + resume the adaptive loop
     } catch (error) {
       console.error('Google sign-in failed', error);
       await showError('Google sign-in failed', describeError(error));
@@ -127,6 +160,8 @@ class AlertController {
   async signOut(): Promise<void> {
     try {
       await this.calendar.signOut();
+      this.signedIn = false;
+      this.stopPolling(); // nothing to poll once the account is gone
       this.next = null;
       this.lastSync = null;
       await this.tick(); // tears down a visible overlay now that next is null
@@ -136,22 +171,75 @@ class AlertController {
     }
   }
 
-  /** The soonest cached meeting, for the adaptive poll scheduler. */
-  get nextEvent(): CalendarEvent | null {
-    return this.next;
+  /**
+   * Start the adaptive calendar-poll loop. Self-scheduling via `setTimeout`
+   * (see lib/poll.ts) so fetches never overlap and the cadence can vary each
+   * cycle. A no-op while signed out — there's nothing to poll until the user
+   * signs in, which restarts the loop.
+   */
+  startPolling(): void {
+    if (this.polling) return;
+    this.polling = true;
+    void this.poll();
   }
 
-  /** Slow path: refresh the cached event from the calendar API. */
+  /** Halt the poll loop (e.g. on sign-out). */
+  stopPolling(): void {
+    this.polling = false;
+    if (this.pollTimer !== undefined) {
+      window.clearTimeout(this.pollTimer);
+      this.pollTimer = undefined;
+    }
+  }
+
+  /** One poll iteration: fetch if signed in, then schedule the next. */
+  private async poll(): Promise<void> {
+    if (!this.polling) return;
+    if (!(await this.calendar.isSignedIn())) {
+      this.signedIn = false;
+      this.polling = false; // nothing to poll until sign-in restarts the loop
+      this.updateStatus(); // reflect a token that lapsed out from under us
+      return;
+    }
+    this.signedIn = true;
+    await this.refresh();
+    if (!this.polling) return; // stopped (e.g. signed out) during the fetch
+    this.pollTimer = window.setTimeout(
+      () => void this.poll(),
+      nextFetchDelayMs(this.next, new Date()),
+    );
+  }
+
+  /** Manual "Sync now" from the tray: fetch immediately, but only if signed in. */
+  async syncNow(): Promise<void> {
+    if (await this.calendar.isSignedIn()) {
+      this.signedIn = true;
+      await this.refresh();
+    }
+  }
+
+  /**
+   * Slow path: refresh the cached event from the calendar API. The scheduled
+   * poll and a manual "Sync now" can both call this, so an in-flight guard keeps
+   * fetches from overlapping; a click during a fetch is simply coalesced into
+   * the one already running (which refreshes the status for everyone).
+   */
   async refresh(): Promise<void> {
+    if (this.refreshing) return;
+    this.refreshing = true;
     try {
-      const events = await this.calendar.getUpcomingEvents(LEAD_TIME_MINUTES * MS_PER_MINUTE);
+      const events = await this.calendar.getUpcomingEvents(FETCH_HORIZON_MINUTES * MS_PER_MINUTE);
       this.next = events.at(0) ?? null;
       this.lastSync = { ok: true, at: new Date() };
     } catch (error) {
       console.error('Calendar refresh failed', error);
-      this.lastSync = { ok: false, at: new Date() };
+      // Carry the reason into the tray; the console log above is invisible while
+      // the overlay window is hidden, so the status line is the user's only clue.
+      this.lastSync = { ok: false, at: new Date(), detail: describeError(error) };
+    } finally {
+      this.refreshing = false;
     }
-    await this.updateStatus();
+    this.updateStatus();
   }
 
   /**
@@ -235,18 +323,24 @@ function bootstrap(): void {
   void onAuthToggleRequested(() => void controller.toggleAuth());
   void controller.syncAuthMenu();
 
-  // Adaptive cadence: fetch the calendar, then schedule the next fetch from how
-  // soon the next meeting is (see lib/poll.ts). Self-scheduling rather than
-  // setInterval so fetches never overlap and the delay can vary each cycle.
-  const fetchLoop = async (): Promise<void> => {
-    await controller.refresh();
-    window.setTimeout(() => void fetchLoop(), nextFetchDelayMs(controller.nextEvent, new Date()));
-  };
-  void fetchLoop();
+  // The tray's "Sync now" item forces an immediate fetch outside the adaptive
+  // poll cadence (a no-op while signed out).
+  void onSyncNowRequested(() => void controller.syncNow());
 
-  // Fast cadence: tick the countdown UI from cache (no network).
-  void controller.tick();
-  window.setInterval(() => void controller.tick(), TICK_INTERVAL_MS);
+  // Adaptive cadence: a self-scheduling calendar-poll loop (see lib/poll.ts),
+  // but only while signed in — there's nothing to sync otherwise, and sign-in
+  // restarts it.
+  controller.startPolling();
+
+  // Fast cadence (no network): drive the overlay countdown AND re-render the
+  // tray status from cache, so the tray's next-meeting countdown stays live and
+  // is current the moment the menu is opened.
+  const tick = (): void => {
+    void controller.tick();
+    controller.updateStatus();
+  };
+  tick();
+  window.setInterval(tick, TICK_INTERVAL_MS);
 }
 
 window.addEventListener('DOMContentLoaded', bootstrap);

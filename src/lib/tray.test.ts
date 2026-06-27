@@ -63,6 +63,30 @@ describe('formatTrayStatus', () => {
     expect(status.connection).toBe('Signed in · sync error');
   });
 
+  it('appends the failure reason when one is available', () => {
+    const status = formatTrayStatus({
+      signedIn: true,
+      lastSync: { ok: false, at: now, detail: 'events.list failed (HTTP 403)' },
+      next: null,
+      now,
+    });
+    expect(status.connection).toBe('Signed in · sync error: events.list failed (HTTP 403)');
+  });
+
+  it('truncates an overlong failure reason', () => {
+    const status = formatTrayStatus({
+      signedIn: true,
+      lastSync: {
+        ok: false,
+        at: now,
+        detail: 'Access Not Configured. Calendar API has not been used in project 12345',
+      },
+      next: null,
+      now,
+    });
+    expect(status.connection).toMatch(/^Signed in · sync error: .{39}…$/);
+  });
+
   it('shows the next meeting with a countdown', () => {
     const status = formatTrayStatus({
       signedIn: true,
