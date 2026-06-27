@@ -74,6 +74,12 @@ pub fn run() {
             oauth::token_clear,
         ])
         .setup(|app| {
+            // On macOS this is a menu-bar-only utility: keep it out of the Dock
+            // and the app switcher by running as an Accessory app. Without this
+            // the app shows a Dock icon in addition to the tray item.
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
             // --- System tray ---------------------------------------------------
             // Two disabled status lines (kept current via `set_tray_status`) sit
             // above a single item that toggles between sign-in and sign-out. The
