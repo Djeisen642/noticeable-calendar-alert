@@ -95,6 +95,19 @@ src-tauri/
 - **Security: calendar data is untrusted.** Meeting titles are rendered with
   `textContent` (never `innerHTML`). Join URLs pass through `safeExternalUrl()`
   and only `http(s)` ever reaches the OS opener.
+- **Tauri permissions need a _scope_, not just the permission.** A bare
+  capability string like `"opener:allow-open-url"` enables the command but leaves
+  its allowlist empty, so at runtime every call is _denied_ ("Not allowed to open
+  url …") — and only on a real desktop run, never in lint/tests/`npm run dev`.
+  Plugins that take a scope (opener, http, fs) must list their allowed targets in
+  `capabilities/default.json`, e.g.
+  `{ "identifier": "opener:allow-open-url", "allow": [{ "url": "https://*" }] }`.
+  The opener matches with glob default options (`*` crosses `/`); the real URL
+  allowlist still lives in the JS guards (`safeExternalUrl`/`safeJoinUrl`).
+- **Surface native-side failures in a dialog, not `console.error`.** Sign-in/out
+  fires from the tray while the overlay window is hidden, so console logs (and a
+  webview `alert()`) are invisible. Route user-facing errors through
+  `showError()` (tauri-plugin-dialog) so they're actually seen.
 - **Motion is GPU-only.** Animate `transform`/`opacity` exclusively; never
   animate layout properties. Respect `prefers-reduced-motion`.
 
