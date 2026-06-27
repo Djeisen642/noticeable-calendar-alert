@@ -12,6 +12,7 @@ import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, formatCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent } from './lib/alert.ts';
+import { nextFetchDelayMs } from './lib/poll.ts';
 import { authMenuLabel, authToggleAction, formatTrayStatus, type SyncState } from './lib/tray.ts';
 import { describeError } from './lib/errors.ts';
 import { MS_PER_SECOND, MS_PER_MINUTE } from './lib/time.ts';
@@ -28,12 +29,6 @@ import {
 
 /** How far ahead of a meeting to fire the overlay. */
 const LEAD_TIME_MINUTES = 5;
-/**
- * How often to hit the calendar API. Kept deliberately slow: the real Google
- * Calendar API is rate-limited, so we cache results and never fetch on the UI
- * cadence.
- */
-const FETCH_INTERVAL_MS = 30 * MS_PER_SECOND;
 /** How often to refresh the countdown UI from the cached event. No network. */
 const TICK_INTERVAL_MS = MS_PER_SECOND;
 
@@ -141,6 +136,11 @@ class AlertController {
     }
   }
 
+  /** The soonest cached meeting, for the adaptive poll scheduler. */
+  get nextEvent(): CalendarEvent | null {
+    return this.next;
+  }
+
   /** Slow path: refresh the cached event from the calendar API. */
   async refresh(): Promise<void> {
     try {
@@ -235,10 +235,16 @@ function bootstrap(): void {
   void onAuthToggleRequested(() => void controller.toggleAuth());
   void controller.syncAuthMenu();
 
-  // Slow cadence: fetch the calendar. Fast cadence: tick the countdown UI.
-  void controller.refresh();
-  window.setInterval(() => void controller.refresh(), FETCH_INTERVAL_MS);
+  // Adaptive cadence: fetch the calendar, then schedule the next fetch from how
+  // soon the next meeting is (see lib/poll.ts). Self-scheduling rather than
+  // setInterval so fetches never overlap and the delay can vary each cycle.
+  const fetchLoop = async (): Promise<void> => {
+    await controller.refresh();
+    window.setTimeout(() => void fetchLoop(), nextFetchDelayMs(controller.nextEvent, new Date()));
+  };
+  void fetchLoop();
 
+  // Fast cadence: tick the countdown UI from cache (no network).
   void controller.tick();
   window.setInterval(() => void controller.tick(), TICK_INTERVAL_MS);
 }
