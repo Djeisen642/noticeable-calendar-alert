@@ -55,6 +55,7 @@ src/
   styles.css           # Transparent overlay; @keyframes walk / wave / bubble fade
   lib/
     countdown.ts(.test) # Pure meeting-countdown math
+    poll.ts(.test)      # nextFetchDelayMs(): adaptive calendar-poll cadence
     calendar.ts(.test)  # CalendarSync interface + deterministic MockCalendarSync
     animation.ts        # OverlayAnimator state machine (idle → walking → waving)
     url.ts(.test)       # safeExternalUrl(): http(s)-only guard for untrusted links
@@ -79,10 +80,11 @@ src-tauri/
 ### Key design decisions (don't regress these)
 
 - **Two cadences, not one.** `AlertController.refresh()` hits the calendar on a
-  slow timer (`FETCH_INTERVAL_MS`); `tick()` updates the countdown UI on a fast
-  timer (`TICK_INTERVAL_MS`) from cache. Never fetch the calendar on the UI
-  cadence — against the real Google API that is tens of thousands of
-  requests/day.
+  slow, _adaptive_ schedule (`nextFetchDelayMs` in `lib/poll.ts` — fast when a
+  meeting is near, idle when none is close), self-scheduled via `setTimeout` so
+  fetches never overlap; `tick()` updates the countdown UI on a fast timer
+  (`TICK_INTERVAL_MS`) from cache. Never fetch the calendar on the UI cadence —
+  against the real Google API that is tens of thousands of requests/day.
 - **Animations are serialized.** `runExclusive()` guards `present`/`dismiss`
   with a `busy` flag so overlapping ticks can't interleave DOM mutations.
 - **The frontend must run framework-free in a plain browser too.** Every native
