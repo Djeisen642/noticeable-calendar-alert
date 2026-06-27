@@ -9,7 +9,11 @@
     "core:window:allow-hide",
     "core:window:allow-set-focus",
     "core:event:allow-listen",
-    "opener:allow-open-url",
+    "dialog:allow-message",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://*" }]
+    },
     {
       "identifier": "http:default",
       "allow": [

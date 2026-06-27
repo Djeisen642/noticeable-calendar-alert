@@ -12,14 +12,18 @@ import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, formatCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent } from './lib/alert.ts';
+import { authMenuLabel, authToggleAction, formatTrayStatus, type SyncState } from './lib/tray.ts';
+import { describeError } from './lib/errors.ts';
 import { MS_PER_SECOND, MS_PER_MINUTE } from './lib/time.ts';
 import {
   setClickThrough,
   openExternal,
   showOverlay,
   hideOverlay,
-  onSignInRequested,
-  onSignOutRequested,
+  onAuthToggleRequested,
+  setAuthMenuLabel,
+  setTrayStatus,
+  showError,
 } from './lib/tauri.ts';
 
 /** How far ahead of a meeting to fire the overlay. */
@@ -66,6 +70,8 @@ class AlertController {
   private dismissedEventId: string | null = null;
   /** Cached soonest event; refreshed on the slow fetch cadence. */
   private next: CalendarEvent | null = null;
+  /** Outcome of the most recent calendar fetch, for the tray sync-health line. */
+  private lastSync: SyncState | null = null;
   /** True while a present/dismiss animation is in flight (mutual exclusion). */
   private busy = false;
 
@@ -81,6 +87,36 @@ class AlertController {
     });
   }
 
+  /**
+   * Handle the tray's single auth item: sign in when signed out, otherwise sign
+   * out. The label is resynced afterward so the menu always reflects state.
+   */
+  async toggleAuth(): Promise<void> {
+    if (authToggleAction(await this.calendar.isSignedIn()) === 'signOut') {
+      await this.signOut();
+    } else {
+      await this.signIn();
+    }
+    await this.syncAuthMenu();
+  }
+
+  /** Push the current sign-in state to the tray menu label and status lines. */
+  async syncAuthMenu(): Promise<void> {
+    await setAuthMenuLabel(authMenuLabel(await this.calendar.isSignedIn()));
+    await this.updateStatus();
+  }
+
+  /** Recompute the two tray status lines from cached state. No network. */
+  async updateStatus(): Promise<void> {
+    const status = formatTrayStatus({
+      signedIn: await this.calendar.isSignedIn(),
+      lastSync: this.lastSync,
+      next: this.next === null ? null : { title: this.next.title, start: this.next.start },
+      now: new Date(),
+    });
+    await setTrayStatus(status.connection, status.meeting);
+  }
+
   /** Run the interactive Google sign-in, then refresh immediately. */
   async signIn(): Promise<void> {
     try {
@@ -88,6 +124,7 @@ class AlertController {
       await this.refresh();
     } catch (error) {
       console.error('Google sign-in failed', error);
+      await showError('Google sign-in failed', describeError(error));
     }
   }
 
@@ -96,9 +133,11 @@ class AlertController {
     try {
       await this.calendar.signOut();
       this.next = null;
+      this.lastSync = null;
       await this.tick(); // tears down a visible overlay now that next is null
     } catch (error) {
       console.error('Google sign-out failed', error);
+      await showError('Google sign-out failed', describeError(error));
     }
   }
 
@@ -107,9 +146,12 @@ class AlertController {
     try {
       const events = await this.calendar.getUpcomingEvents(LEAD_TIME_MINUTES * MS_PER_MINUTE);
       this.next = events.at(0) ?? null;
+      this.lastSync = { ok: true, at: new Date() };
     } catch (error) {
       console.error('Calendar refresh failed', error);
+      this.lastSync = { ok: false, at: new Date() };
     }
+    await this.updateStatus();
   }
 
   /**
@@ -188,9 +230,10 @@ function bootstrap(): void {
   const calendar = createCalendarSync();
   const controller = new AlertController(calendar, animator, elements);
 
-  // The tray "Sign in / Sign out" items emit these events.
-  void onSignInRequested(() => void controller.signIn());
-  void onSignOutRequested(() => void controller.signOut());
+  // The tray's single auth item toggles sign-in/out; sync its label to the
+  // current state up front (e.g. "Sign out" when a token is already stored).
+  void onAuthToggleRequested(() => void controller.toggleAuth());
+  void controller.syncAuthMenu();
 
   // Slow cadence: fetch the calendar. Fast cadence: tick the countdown UI.
   void controller.refresh();
