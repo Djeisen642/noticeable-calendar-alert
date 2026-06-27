@@ -28,6 +28,16 @@ describe('MockCalendarSync', () => {
     expect(event.start.getTime()).toBe(Date.parse('2026-06-26T09:00:08.000Z'));
   });
 
+  it('tracks sign-in state so the tray toggle can reflect it', async () => {
+    const sync = new MockCalendarSync(8);
+
+    expect(await sync.isSignedIn()).toBe(false);
+    await sync.authenticate();
+    expect(await sync.isSignedIn()).toBe(true);
+    await sync.signOut();
+    expect(await sync.isSignedIn()).toBe(false);
+  });
+
   it('re-arms a fresh meeting once the previous one has started', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-06-26T09:00:00.000Z'));
