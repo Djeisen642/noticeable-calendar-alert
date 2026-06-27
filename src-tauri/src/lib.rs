@@ -137,10 +137,11 @@ pub fn run() {
                         let _ = app.emit("sync-now", ());
                     }
                     "show" => {
-                        if let Some(window) = app.get_webview_window("overlay") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        // Preview the overlay with placeholder content. The
+                        // webview owns the present sequence (and showing the
+                        // window via `showOverlay`), so just signal it — merely
+                        // showing the window here would reveal an empty overlay.
+                        let _ = app.emit("test-overlay", ());
                     }
                     _ => {}
                 });

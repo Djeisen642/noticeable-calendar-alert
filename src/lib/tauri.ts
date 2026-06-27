@@ -99,6 +99,14 @@ export function onSyncNowRequested(handler: () => void): Promise<void> {
 }
 
 /**
+ * Subscribe to the tray's "Test Overlay" menu event, which plays the overlay
+ * with placeholder content so it can be previewed without a real meeting.
+ */
+export function onTestOverlayRequested(handler: () => void): Promise<void> {
+  return onTrayEvent('test-overlay', handler);
+}
+
+/**
  * Update the tray auth item's label so it reflects the current sign-in state
  * (e.g. flips to "Sign out" after a successful sign-in). A no-op in the browser.
  */
