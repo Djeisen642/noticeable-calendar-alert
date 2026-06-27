@@ -12,6 +12,7 @@ import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, formatCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent } from './lib/alert.ts';
+import { demoBubbleContent } from './lib/demo.ts';
 import { nextFetchDelayMs } from './lib/poll.ts';
 import { authMenuLabel, authToggleAction, formatTrayStatus, type SyncState } from './lib/tray.ts';
 import { describeError } from './lib/errors.ts';
@@ -23,6 +24,7 @@ import {
   hideOverlay,
   onAuthToggleRequested,
   onSyncNowRequested,
+  onTestOverlayRequested,
   setAuthMenuLabel,
   setTrayStatus,
   showError,
@@ -41,6 +43,8 @@ const LEAD_TIME_MINUTES = 5;
 const FETCH_HORIZON_MINUTES = 24 * 60;
 /** How often to refresh the countdown UI from the cached event. No network. */
 const TICK_INTERVAL_MS = MS_PER_SECOND;
+/** How long the tray "Test Overlay" preview stays up before auto-dismissing. */
+const DEMO_HOLD_MS = 6 * MS_PER_SECOND;
 
 /** Resolve a required element or fail loudly at startup. */
 function mustGet<T extends HTMLElement>(id: string): T {
@@ -90,6 +94,8 @@ class AlertController {
   private polling = false;
   /** Pending poll-loop timer, so it can be cancelled on sign-out. */
   private pollTimer: number | undefined;
+  /** Pending auto-dismiss timer for a "Test Overlay" preview, if any. */
+  private demoTimer: number | undefined;
 
   constructor(calendar: CalendarSync, animator: OverlayAnimator, elements: OverlayElements) {
     this.calendar = calendar;
@@ -219,6 +225,32 @@ class AlertController {
   }
 
   /**
+   * Tray "Test Overlay": play the full attention sequence with placeholder
+   * content so the overlay can be previewed even when no real meeting is near.
+   * Auto-dismisses after a short hold. Won't stomp a real alert that's already
+   * on screen, and the auto-dismiss bows out if a real meeting has since claimed
+   * the overlay.
+   */
+  async demo(): Promise<void> {
+    let presented = false;
+    await this.runExclusive(async () => {
+      if (this.activeEventId !== null) return; // a real alert owns the overlay
+      presented = true;
+      await showOverlay();
+      await setClickThrough(false);
+      await this.animator.present(demoBubbleContent());
+    });
+    if (!presented) return;
+
+    if (this.demoTimer !== undefined) window.clearTimeout(this.demoTimer);
+    this.demoTimer = window.setTimeout(() => {
+      this.demoTimer = undefined;
+      // Only tear down the preview if a real meeting hasn't taken over since.
+      if (this.activeEventId === null) void this.runExclusive(() => this.dismiss());
+    }, DEMO_HOLD_MS);
+  }
+
+  /**
    * Slow path: refresh the cached event from the calendar API. The scheduled
    * poll and a manual "Sync now" can both call this, so an in-flight guard keeps
    * fetches from overlapping; a click during a fetch is simply coalesced into
@@ -300,9 +332,19 @@ class AlertController {
   }
 
   private async dismiss(): Promise<void> {
+    // Any dismissal (Join click, countdown elapsing, sign-out) supersedes a
+    // pending "Test Overlay" auto-dismiss, so cancel it to avoid a stray teardown.
+    if (this.demoTimer !== undefined) {
+      window.clearTimeout(this.demoTimer);
+      this.demoTimer = undefined;
+    }
     // Remember what we dismissed so a still-upcoming meeting doesn't pop back
-    // up on the next tick (e.g. right after the user clicks "Join Call").
-    this.dismissedEventId = this.activeEventId;
+    // up on the next tick (e.g. right after the user clicks "Join Call"). Guard
+    // against a null active id — tearing down a "Test Overlay" preview must not
+    // erase the memory of a real meeting the user previously dismissed.
+    if (this.activeEventId !== null) {
+      this.dismissedEventId = this.activeEventId;
+    }
     this.activeEventId = null;
     await this.animator.dismiss();
     // Restore click-through and tuck the window away.
@@ -326,6 +368,10 @@ function bootstrap(): void {
   // The tray's "Sync now" item forces an immediate fetch outside the adaptive
   // poll cadence (a no-op while signed out).
   void onSyncNowRequested(() => void controller.syncNow());
+
+  // The tray's "Test Overlay" item previews the alert with placeholder content,
+  // independent of calendar state.
+  void onTestOverlayRequested(() => void controller.demo());
 
   // Adaptive cadence: a self-scheduling calendar-poll loop (see lib/poll.ts),
   // but only while signed in — there's nothing to sync otherwise, and sign-in
