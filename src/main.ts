@@ -10,12 +10,8 @@
 import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
 import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
 import { createCalendarSync } from './lib/google/config.ts';
-import {
-  getCountdownDelta,
-  formatCountdown,
-  shouldAlert,
-  type CountdownDelta,
-} from './lib/countdown.ts';
+import { getCountdownDelta, formatCountdown, type CountdownDelta } from './lib/countdown.ts';
+import { shouldPresent } from './lib/alert.ts';
 import { MS_PER_SECOND, MS_PER_MINUTE } from './lib/time.ts';
 import {
   setClickThrough,
@@ -66,6 +62,8 @@ class AlertController {
   private readonly animator: OverlayAnimator;
   private readonly elements: OverlayElements;
   private activeEventId: string | null = null;
+  /** The last event the user dismissed, so we don't immediately re-present it. */
+  private dismissedEventId: string | null = null;
   /** Cached soonest event; refreshed on the slow fetch cadence. */
   private next: CalendarEvent | null = null;
   /** True while a present/dismiss animation is in flight (mutual exclusion). */
@@ -137,7 +135,12 @@ class AlertController {
         return;
       }
 
-      if (shouldAlert(next.start, now, LEAD_TIME_MINUTES)) {
+      if (
+        shouldPresent(next, now, LEAD_TIME_MINUTES, {
+          activeEventId: this.activeEventId,
+          dismissedEventId: this.dismissedEventId,
+        })
+      ) {
         await this.present(next, delta);
       }
     });
@@ -167,6 +170,9 @@ class AlertController {
   }
 
   private async dismiss(): Promise<void> {
+    // Remember what we dismissed so a still-upcoming meeting doesn't pop back
+    // up on the next tick (e.g. right after the user clicks "Join Call").
+    this.dismissedEventId = this.activeEventId;
     this.activeEventId = null;
     await this.animator.dismiss();
     // Restore click-through and tuck the window away.
