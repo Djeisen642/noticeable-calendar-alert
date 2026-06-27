@@ -13,6 +13,7 @@ import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, formatCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent } from './lib/alert.ts';
 import { authMenuLabel, authToggleAction } from './lib/tray.ts';
+import { describeError } from './lib/errors.ts';
 import { MS_PER_SECOND, MS_PER_MINUTE } from './lib/time.ts';
 import {
   setClickThrough,
@@ -21,6 +22,7 @@ import {
   hideOverlay,
   onAuthToggleRequested,
   setAuthMenuLabel,
+  showError,
 } from './lib/tauri.ts';
 
 /** How far ahead of a meeting to fire the overlay. */
@@ -107,6 +109,7 @@ class AlertController {
       await this.refresh();
     } catch (error) {
       console.error('Google sign-in failed', error);
+      await showError('Google sign-in failed', describeError(error));
     }
   }
 
@@ -118,6 +121,7 @@ class AlertController {
       await this.tick(); // tears down a visible overlay now that next is null
     } catch (error) {
       console.error('Google sign-out failed', error);
+      await showError('Google sign-out failed', describeError(error));
     }
   }
 

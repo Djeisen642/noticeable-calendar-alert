@@ -93,3 +93,24 @@ export async function setAuthMenuLabel(label: string): Promise<void> {
   const { invoke } = await import('@tauri-apps/api/core');
   await invoke('set_auth_menu_label', { label });
 }
+
+/**
+ * Surface an error to the user with a native dialog.
+ *
+ * Sign-in is triggered from the tray while the overlay window is hidden, so a
+ * `console.error` (or a webview `alert()` from a hidden window) is useless — the
+ * user never sees it. The Tauri dialog plugin shows a real OS message box that
+ * does not depend on any window being visible. In a plain browser we fall back
+ * to `alert()` so `npm run dev` still surfaces failures.
+ */
+export async function showError(title: string, detail: string): Promise<void> {
+  if (!isTauri()) {
+    if (typeof window !== 'undefined') {
+      window.alert(`${title}\n\n${detail}`);
+    }
+    return;
+  }
+
+  const { message } = await import('@tauri-apps/plugin-dialog');
+  await message(detail, { title, kind: 'error' });
+}
