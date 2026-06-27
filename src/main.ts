@@ -29,6 +29,15 @@ import {
 
 /** How far ahead of a meeting to fire the overlay. */
 const LEAD_TIME_MINUTES = 5;
+/**
+ * How far ahead to fetch events. This is deliberately *much* wider than the
+ * alert lead: `this.next` feeds both the tray "next meeting" line and the
+ * adaptive poll cadence (`nextFetchDelayMs`, which scales from "within the hour"
+ * down to idle), so it must surface the soonest meeting whenever it is — not
+ * only once it's inside the 5-minute alert window. `tick()`/`shouldPresent`
+ * still gate the actual overlay on `LEAD_TIME_MINUTES`.
+ */
+const FETCH_HORIZON_MINUTES = 24 * 60;
 /** How often to refresh the countdown UI from the cached event. No network. */
 const TICK_INTERVAL_MS = MS_PER_SECOND;
 
@@ -144,12 +153,14 @@ class AlertController {
   /** Slow path: refresh the cached event from the calendar API. */
   async refresh(): Promise<void> {
     try {
-      const events = await this.calendar.getUpcomingEvents(LEAD_TIME_MINUTES * MS_PER_MINUTE);
+      const events = await this.calendar.getUpcomingEvents(FETCH_HORIZON_MINUTES * MS_PER_MINUTE);
       this.next = events.at(0) ?? null;
       this.lastSync = { ok: true, at: new Date() };
     } catch (error) {
       console.error('Calendar refresh failed', error);
-      this.lastSync = { ok: false, at: new Date() };
+      // Carry the reason into the tray; the console log above is invisible while
+      // the overlay window is hidden, so the status line is the user's only clue.
+      this.lastSync = { ok: false, at: new Date(), detail: describeError(error) };
     }
     await this.updateStatus();
   }

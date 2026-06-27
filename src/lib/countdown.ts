@@ -71,6 +71,15 @@ export function formatCountdown(delta: CountdownDelta): string {
     return `in ${delta.seconds}s`;
   }
 
+  // For a meeting an hour or more out (e.g. the tray "next meeting" line, which
+  // looks well past the 5-minute alert lead) switch to h:m — "in 135m 00s" reads
+  // badly. The overlay bubble only ever sees sub-lead deltas, so it never hits this.
+  if (delta.minutes >= 60) {
+    const hours = Math.floor(delta.minutes / 60);
+    const padMinutes = String(delta.minutes % 60).padStart(2, '0');
+    return `in ${String(hours)}h ${padMinutes}m`;
+  }
+
   const padSeconds = String(delta.seconds).padStart(2, '0');
   return `in ${delta.minutes}m ${padSeconds}s`;
 }

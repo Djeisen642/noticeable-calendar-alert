@@ -80,4 +80,14 @@ describe('formatCountdown', () => {
   it('reports elapsed time once started', () => {
     expect(formatCountdown(getCountdownDelta(minutesFromNow(-3), NOW))).toBe('started 3m ago');
   });
+
+  it('switches to hours for a meeting an hour or more out', () => {
+    // The tray "next meeting" line looks well past the 5-minute alert lead, so a
+    // far-future meeting must read as h:m rather than "in 135m 00s".
+    expect(formatCountdown(getCountdownDelta(minutesFromNow(135), NOW))).toBe('in 2h 15m');
+  });
+
+  it('zero-pads the minutes component at the hour boundary', () => {
+    expect(formatCountdown(getCountdownDelta(minutesFromNow(63), NOW))).toBe('in 1h 03m');
+  });
 });
