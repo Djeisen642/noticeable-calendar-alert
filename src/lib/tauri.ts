@@ -95,6 +95,17 @@ export async function setAuthMenuLabel(label: string): Promise<void> {
 }
 
 /**
+ * Update the two disabled status lines at the top of the tray menu. A no-op in
+ * the browser, where there is no tray.
+ */
+export async function setTrayStatus(connection: string, meeting: string): Promise<void> {
+  if (!isTauri()) return;
+
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('set_tray_status', { connection, meeting });
+}
+
+/**
  * Surface an error to the user with a native dialog.
  *
  * Sign-in is triggered from the tray while the overlay window is hidden, so a

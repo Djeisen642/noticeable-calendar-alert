@@ -12,7 +12,7 @@ import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, formatCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent } from './lib/alert.ts';
-import { authMenuLabel, authToggleAction } from './lib/tray.ts';
+import { authMenuLabel, authToggleAction, formatTrayStatus, type SyncState } from './lib/tray.ts';
 import { describeError } from './lib/errors.ts';
 import { MS_PER_SECOND, MS_PER_MINUTE } from './lib/time.ts';
 import {
@@ -22,6 +22,7 @@ import {
   hideOverlay,
   onAuthToggleRequested,
   setAuthMenuLabel,
+  setTrayStatus,
   showError,
 } from './lib/tauri.ts';
 
@@ -69,6 +70,8 @@ class AlertController {
   private dismissedEventId: string | null = null;
   /** Cached soonest event; refreshed on the slow fetch cadence. */
   private next: CalendarEvent | null = null;
+  /** Outcome of the most recent calendar fetch, for the tray sync-health line. */
+  private lastSync: SyncState | null = null;
   /** True while a present/dismiss animation is in flight (mutual exclusion). */
   private busy = false;
 
@@ -97,9 +100,21 @@ class AlertController {
     await this.syncAuthMenu();
   }
 
-  /** Push the current sign-in state to the tray menu label. */
+  /** Push the current sign-in state to the tray menu label and status lines. */
   async syncAuthMenu(): Promise<void> {
     await setAuthMenuLabel(authMenuLabel(await this.calendar.isSignedIn()));
+    await this.updateStatus();
+  }
+
+  /** Recompute the two tray status lines from cached state. No network. */
+  async updateStatus(): Promise<void> {
+    const status = formatTrayStatus({
+      signedIn: await this.calendar.isSignedIn(),
+      lastSync: this.lastSync,
+      next: this.next === null ? null : { title: this.next.title, start: this.next.start },
+      now: new Date(),
+    });
+    await setTrayStatus(status.connection, status.meeting);
   }
 
   /** Run the interactive Google sign-in, then refresh immediately. */
@@ -118,6 +133,7 @@ class AlertController {
     try {
       await this.calendar.signOut();
       this.next = null;
+      this.lastSync = null;
       await this.tick(); // tears down a visible overlay now that next is null
     } catch (error) {
       console.error('Google sign-out failed', error);
@@ -130,9 +146,12 @@ class AlertController {
     try {
       const events = await this.calendar.getUpcomingEvents(LEAD_TIME_MINUTES * MS_PER_MINUTE);
       this.next = events.at(0) ?? null;
+      this.lastSync = { ok: true, at: new Date() };
     } catch (error) {
       console.error('Calendar refresh failed', error);
+      this.lastSync = { ok: false, at: new Date() };
     }
+    await this.updateStatus();
   }
 
   /**

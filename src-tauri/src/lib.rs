@@ -1,7 +1,7 @@
 mod oauth;
 
 use tauri::{
-    menu::{Menu, MenuItem},
+    menu::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIconBuilder,
     Emitter, Manager, WebviewWindow,
 };
@@ -9,6 +9,13 @@ use tauri::{
 /// Holds the single tray auth item so the frontend can relabel it as the
 /// sign-in state changes (e.g. flip to "Sign out" after a successful sign-in).
 struct AuthMenuItem(MenuItem<tauri::Wry>);
+
+/// Holds the two disabled status lines at the top of the tray menu so the
+/// frontend can keep them current (connection/sync health + next meeting).
+struct StatusMenuItems {
+    connection: MenuItem<tauri::Wry>,
+    meeting: MenuItem<tauri::Wry>,
+}
 
 /// Relabel the tray auth item to reflect the current sign-in state.
 ///
@@ -18,6 +25,24 @@ struct AuthMenuItem(MenuItem<tauri::Wry>);
 #[tauri::command]
 fn set_auth_menu_label(label: String, item: tauri::State<'_, AuthMenuItem>) -> Result<(), String> {
     item.0.set_text(label).map_err(|err| err.to_string())
+}
+
+/// Update the two disabled tray status lines. Text is composed in the frontend
+/// (see `formatTrayStatus` in `lib/tray.ts`); we only apply it here.
+#[tauri::command]
+fn set_tray_status(
+    connection: String,
+    meeting: String,
+    items: tauri::State<'_, StatusMenuItems>,
+) -> Result<(), String> {
+    items
+        .connection
+        .set_text(connection)
+        .map_err(|err| err.to_string())?;
+    items
+        .meeting
+        .set_text(meeting)
+        .map_err(|err| err.to_string())
 }
 
 /// Toggle mouse click-through for a window.
@@ -42,6 +67,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             set_click_through,
             set_auth_menu_label,
+            set_tray_status,
             oauth::oauth_capture,
             oauth::token_save,
             oauth::token_load,
@@ -49,17 +75,43 @@ pub fn run() {
         ])
         .setup(|app| {
             // --- System tray ---------------------------------------------------
-            // A single item toggles between sign-in and sign-out. The frontend
-            // relabels it via `set_auth_menu_label` as the state changes, so the
-            // menu never shows both actions at once.
+            // Two disabled status lines (kept current via `set_tray_status`) sit
+            // above a single item that toggles between sign-in and sign-out. The
+            // frontend relabels that item via `set_auth_menu_label` as the state
+            // changes, so the menu never shows both actions at once.
+            let status_conn =
+                MenuItem::with_id(app, "status_conn", "Not signed in", false, None::<&str>)?;
+            let status_meeting = MenuItem::with_id(
+                app,
+                "status_meeting",
+                "Sign in to see meetings",
+                false,
+                None::<&str>,
+            )?;
+            let separator = PredefinedMenuItem::separator(app)?;
             let auth_item =
                 MenuItem::with_id(app, "auth", "Sign in with Google", true, None::<&str>)?;
             let show_item = MenuItem::with_id(app, "show", "Test Overlay", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&auth_item, &show_item, &quit_item])?;
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &status_conn as &dyn IsMenuItem<tauri::Wry>,
+                    &status_meeting,
+                    &separator,
+                    &auth_item,
+                    &show_item,
+                    &quit_item,
+                ],
+            )?;
 
-            // Keep a handle to the auth item so the relabel command can find it.
+            // Keep handles to the mutable items so the update commands can reach
+            // them after setup returns.
             app.manage(AuthMenuItem(auth_item.clone()));
+            app.manage(StatusMenuItems {
+                connection: status_conn.clone(),
+                meeting: status_meeting.clone(),
+            });
 
             let mut tray = TrayIconBuilder::with_id("main-tray")
                 .tooltip("Noticeable Calendar Alert")
