@@ -77,6 +77,11 @@ class AlertController {
   private next: CalendarEvent | null = null;
   /** Outcome of the most recent calendar fetch, for the tray sync-health line. */
   private lastSync: SyncState | null = null;
+  /** Cached sign-in state so the per-second status re-render needs no keychain. */
+  private signedIn = false;
+  /** Last text pushed to each tray line, so we only re-push when it changes. */
+  private lastConnection: string | null = null;
+  private lastMeeting: string | null = null;
   /** True while a present/dismiss animation is in flight (mutual exclusion). */
   private busy = false;
   /** True while a calendar fetch is in flight, so fetches never overlap. */
@@ -113,25 +118,37 @@ class AlertController {
 
   /** Push the current sign-in state to the tray menu label and status lines. */
   async syncAuthMenu(): Promise<void> {
-    await setAuthMenuLabel(authMenuLabel(await this.calendar.isSignedIn()));
-    await this.updateStatus();
+    this.signedIn = await this.calendar.isSignedIn();
+    await setAuthMenuLabel(authMenuLabel(this.signedIn));
+    this.updateStatus();
   }
 
-  /** Recompute the two tray status lines from cached state. No network. */
-  async updateStatus(): Promise<void> {
+  /**
+   * Re-render the two tray status lines from cached state and push them only if
+   * the text changed. No network or I/O, so it's cheap to call every tick — that
+   * keeps the next-meeting countdown live, so it's current the instant the menu
+   * is opened (visibility of system status) without spamming identical updates.
+   */
+  updateStatus(): void {
     const status = formatTrayStatus({
-      signedIn: await this.calendar.isSignedIn(),
+      signedIn: this.signedIn,
       lastSync: this.lastSync,
       next: this.next === null ? null : { title: this.next.title, start: this.next.start },
       now: new Date(),
     });
-    await setTrayStatus(status.connection, status.meeting);
+    if (status.connection === this.lastConnection && status.meeting === this.lastMeeting) {
+      return;
+    }
+    this.lastConnection = status.connection;
+    this.lastMeeting = status.meeting;
+    void setTrayStatus(status.connection, status.meeting);
   }
 
   /** Run the interactive Google sign-in, then start polling immediately. */
   async signIn(): Promise<void> {
     try {
       await this.calendar.authenticate();
+      this.signedIn = true;
       this.startPolling(); // immediate fetch + resume the adaptive loop
     } catch (error) {
       console.error('Google sign-in failed', error);
@@ -143,6 +160,7 @@ class AlertController {
   async signOut(): Promise<void> {
     try {
       await this.calendar.signOut();
+      this.signedIn = false;
       this.stopPolling(); // nothing to poll once the account is gone
       this.next = null;
       this.lastSync = null;
@@ -178,9 +196,12 @@ class AlertController {
   private async poll(): Promise<void> {
     if (!this.polling) return;
     if (!(await this.calendar.isSignedIn())) {
+      this.signedIn = false;
       this.polling = false; // nothing to poll until sign-in restarts the loop
+      this.updateStatus(); // reflect a token that lapsed out from under us
       return;
     }
+    this.signedIn = true;
     await this.refresh();
     if (!this.polling) return; // stopped (e.g. signed out) during the fetch
     this.pollTimer = window.setTimeout(
@@ -191,7 +212,10 @@ class AlertController {
 
   /** Manual "Sync now" from the tray: fetch immediately, but only if signed in. */
   async syncNow(): Promise<void> {
-    if (await this.calendar.isSignedIn()) await this.refresh();
+    if (await this.calendar.isSignedIn()) {
+      this.signedIn = true;
+      await this.refresh();
+    }
   }
 
   /**
@@ -215,7 +239,7 @@ class AlertController {
     } finally {
       this.refreshing = false;
     }
-    await this.updateStatus();
+    this.updateStatus();
   }
 
   /**
@@ -308,9 +332,15 @@ function bootstrap(): void {
   // restarts it.
   controller.startPolling();
 
-  // Fast cadence: tick the countdown UI from cache (no network).
-  void controller.tick();
-  window.setInterval(() => void controller.tick(), TICK_INTERVAL_MS);
+  // Fast cadence (no network): drive the overlay countdown AND re-render the
+  // tray status from cache, so the tray's next-meeting countdown stays live and
+  // is current the moment the menu is opened.
+  const tick = (): void => {
+    void controller.tick();
+    controller.updateStatus();
+  };
+  tick();
+  window.setInterval(tick, TICK_INTERVAL_MS);
 }
 
 window.addEventListener('DOMContentLoaded', bootstrap);
