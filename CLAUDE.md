@@ -52,12 +52,13 @@ until all of the following are true. Do not report something as finished or
 ```
 src/
   main.ts              # AlertController: slow calendar fetch + fast UI tick, serialized
-  styles.css           # Transparent overlay; @keyframes walk / wave / bubble fade
+  styles.css           # Transparent overlay; walk/wave/blink/breathe/hop choreography
   lib/
-    countdown.ts(.test) # Pure meeting-countdown math
+    countdown.ts(.test) # Pure meeting-countdown math + countdownUrgency()
     poll.ts(.test)      # nextFetchDelayMs(): adaptive calendar-poll cadence
     calendar.ts(.test)  # CalendarSync interface + deterministic MockCalendarSync
-    animation.ts        # OverlayAnimator state machine (idle → walking → waving)
+    character.ts(.test) # The mascot SVG: single source of truth for its part ids
+    animation.ts        # OverlayAnimator (idle → walking → waving → presenting)
     url.ts(.test)       # safeExternalUrl(): http(s)-only guard for untrusted links
     tauri.ts            # Optional native bridge; degrades gracefully in a browser
     google/             # Real Google Calendar OAuth layer

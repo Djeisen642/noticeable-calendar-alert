@@ -38,6 +38,34 @@ export function getCountdownDelta(start: Date, now: Date = new Date()): Countdow
 }
 
 /**
+ * How urgently the overlay should behave while it is up. Drives the character
+ * (calm presenting → excited hopping) and the countdown text color via
+ * `data-urgency` attributes — see `OverlayAnimator` and styles.css.
+ */
+export type Urgency = 'calm' | 'soon' | 'now';
+
+/** At or under this remaining time the alert escalates to `'soon'`. */
+export const SOON_THRESHOLD_MS = 3 * MS_PER_MINUTE;
+/** At or under this remaining time (or once past) it escalates to `'now'`. */
+export const NOW_THRESHOLD_MS = MS_PER_MINUTE;
+
+/**
+ * Classify a countdown delta into an urgency level.
+ *
+ * @example
+ * countdownUrgency(getCountdownDelta(start, now)); // 'calm' | 'soon' | 'now'
+ */
+export function countdownUrgency(delta: CountdownDelta): Urgency {
+  if (delta.isPast || delta.totalMs <= NOW_THRESHOLD_MS) {
+    return 'now';
+  }
+  if (delta.totalMs <= SOON_THRESHOLD_MS) {
+    return 'soon';
+  }
+  return 'calm';
+}
+
+/**
  * Whether the overlay should fire: the meeting is still upcoming and falls
  * within the configured lead window.
  *

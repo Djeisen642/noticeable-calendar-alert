@@ -9,8 +9,14 @@
 
 import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
 import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
+import { mountCharacter } from './lib/character.ts';
 import { createCalendarSync } from './lib/google/config.ts';
-import { getCountdownDelta, formatCountdown, type CountdownDelta } from './lib/countdown.ts';
+import {
+  getCountdownDelta,
+  formatCountdown,
+  countdownUrgency,
+  type CountdownDelta,
+} from './lib/countdown.ts';
 import { shouldPresent } from './lib/alert.ts';
 import { demoBubbleContent } from './lib/demo.ts';
 import { nextFetchDelayMs } from './lib/poll.ts';
@@ -292,7 +298,7 @@ class AlertController {
 
       if (this.activeEventId === next.id) {
         // Already showing this meeting — just keep the countdown fresh.
-        this.animator.updateCountdown(formatCountdown(delta));
+        this.animator.updateCountdown(formatCountdown(delta), countdownUrgency(delta));
         if (delta.isPast) await this.dismiss();
         return;
       }
@@ -328,6 +334,7 @@ class AlertController {
       title: event.title,
       countdown: formatCountdown(delta),
       joinUrl: event.joinUrl,
+      urgency: countdownUrgency(delta),
     });
   }
 
@@ -355,6 +362,8 @@ class AlertController {
 
 function bootstrap(): void {
   const elements = resolveElements();
+  // Inject the character SVG (lib/character.ts is its single source of truth).
+  mountCharacter(elements.character);
   const animator = new OverlayAnimator(elements);
   // Real GoogleCalendarSync when configured + in the desktop app; mock otherwise.
   const calendar = createCalendarSync();

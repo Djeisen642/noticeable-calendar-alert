@@ -13,6 +13,12 @@ describe('demoBubbleContent', () => {
     expect(demoBubbleContent(now).countdown).toBe(`in ${DEMO_LEAD_MINUTES}m 00s`);
   });
 
+  it('previews the calm presentation (the demo meeting is comfortably away)', () => {
+    // At DEMO_LEAD_MINUTES out the character should present calmly — the
+    // preview must not open with the final-minute hop/red-pulse escalation.
+    expect(demoBubbleContent(now).urgency).toBe('calm');
+  });
+
   it('offers a join link that survives the strict conferencing-host guard', () => {
     // Regression guard: the preview must use a real provider host, otherwise the
     // "Join Call" button would be hidden (no URL) or rejected by safeJoinUrl —

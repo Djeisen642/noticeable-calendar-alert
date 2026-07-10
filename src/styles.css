@@ -5,6 +5,14 @@
  * page background MUST stay transparent too. All motion is expressed as GPU-
  * friendly transform/opacity changes — never layout properties — to keep the
  * animation buttery and the CPU idle.
+ *
+ * Character choreography (states set by OverlayAnimator via data-state):
+ *   walking    — legs step in counter-phase, arms swing, body bobs and tilts
+ *   waving     — the greeting arm raises (transition) then waves (keyframes)
+ *   presenting — arm lowers; the body breathes, the head sways, eyes blink
+ * Urgency (data-urgency, from countdownUrgency): 'now' makes the character hop
+ * and the countdown text pulse red; 'soon' turns the countdown amber.
+ * The animatable SVG part ids (#leg-left, #arm-wave, …) live in lib/character.ts.
  */
 
 :root {
@@ -12,8 +20,15 @@
   --bubble-fg: #1f2330;
   --accent: #5b8def;
   --accent-strong: #3f6fd6;
+  --urgency-soon: #b26a00;
+  --urgency-now: #d64545;
   --walk-duration: 1100ms;
-  --walk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Slight overshoot so the character strides past the mark and settles back. */
+  --walk-ease: cubic-bezier(0.3, 1.12, 0.35, 1);
+  /* One full step cycle (left + right footfall). */
+  --stride-duration: 340ms;
+  /* Raising/lowering the greeting arm. WAVE_HOLD_MS in animation.ts allows for it. */
+  --arm-raise-duration: 260ms;
 }
 
 * {
@@ -60,36 +75,230 @@ body {
   transform: translateX(0);
 }
 
-/* A subtle vertical bob while walking sells the footsteps. */
-.character[data-state='walking'] svg {
-  animation: bob 280ms ease-in-out infinite;
-}
-
-/* Waving: the arm is already raised; pivot it at the shoulder (bottom-left of
-   the arm's own box) so the raised hand swings side to side like a real wave. */
-.character[data-state='waving'] #arm {
+/* Pivot points for the articulated parts. transform-box: fill-box makes each
+   group rotate around its own geometry instead of the whole SVG canvas. */
+.character #leg-left,
+.character #leg-right {
   transform-box: fill-box;
-  transform-origin: left bottom;
-  animation: wave 550ms ease-in-out infinite;
+  transform-origin: 50% 12%; /* the hip */
 }
 
-@keyframes bob {
+.character #arm-rest {
+  transform-box: fill-box;
+  transform-origin: 50% 10%; /* the shoulder */
+}
+
+/* The greeting arm is drawn raised; by default it hangs tucked at the side
+   (rotated down at the shoulder). Waving releases it back to 0deg — the
+   transition IS the arm-raise moment. */
+.character #arm-wave {
+  transform-box: fill-box;
+  transform-origin: left bottom; /* the shoulder */
+  transform: rotate(118deg);
+  transition: transform var(--arm-raise-duration) ease;
+}
+
+.character #eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.character #antenna {
+  transform-box: fill-box;
+  transform-origin: 50% 100%; /* the stem base */
+}
+
+.character #body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%; /* breathe from the ground up */
+}
+
+.character #head {
+  transform-box: fill-box;
+  transform-origin: 50% 80%; /* the neck */
+}
+
+/* Life signs whenever the character is on screen, whatever the state. */
+.character.is-onstage #eyes {
+  animation: blink 4400ms linear infinite;
+}
+
+.character.is-onstage #antenna {
+  animation: antenna-sway 2600ms ease-in-out infinite;
+}
+
+/* ---------- Walking ---------- */
+
+/* Two footfalls per stride cycle: the body bobs twice and tilts side to side. */
+.character[data-state='walking'] svg {
+  animation: stride var(--stride-duration) ease-in-out infinite;
+}
+
+/* Legs step in counter-phase (the right leg runs half a cycle ahead). */
+.character[data-state='walking'] #leg-left {
+  animation: step var(--stride-duration) ease-in-out infinite;
+}
+
+.character[data-state='walking'] #leg-right {
+  animation: step var(--stride-duration) ease-in-out infinite;
+  animation-delay: calc(var(--stride-duration) / -2);
+}
+
+/* Arms swing opposite each other, like an actual walk. */
+.character[data-state='walking'] #arm-rest {
+  animation: arm-swing-back var(--stride-duration) ease-in-out infinite;
+}
+
+.character[data-state='walking'] #arm-wave {
+  animation: arm-swing-fore var(--stride-duration) ease-in-out infinite;
+}
+
+@keyframes stride {
+  0%,
+  50%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-4px) rotate(1deg);
+  }
+  75% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+}
+
+@keyframes step {
   0%,
   100% {
-    transform: translateY(0);
+    transform: rotate(16deg);
   }
   50% {
-    transform: translateY(-6px);
+    transform: rotate(-16deg);
   }
+}
+
+@keyframes arm-swing-back {
+  0%,
+  100% {
+    transform: rotate(-13deg);
+  }
+  50% {
+    transform: rotate(13deg);
+  }
+}
+
+/* The greeting arm swings around its tucked-down position while walking. */
+@keyframes arm-swing-fore {
+  0%,
+  100% {
+    transform: rotate(124deg);
+  }
+  50% {
+    transform: rotate(110deg);
+  }
+}
+
+/* ---------- Waving ---------- */
+
+/* Release the arm to raised (the base transition plays the raise), then wave.
+   The keyframes start/end at 0deg so the handoff from the raise is seamless. */
+.character[data-state='waving'] #arm-wave {
+  transform: rotate(0deg);
+  animation: wave 520ms ease-in-out var(--arm-raise-duration) infinite;
 }
 
 @keyframes wave {
   0%,
   100% {
-    transform: rotate(-11deg);
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(-14deg);
+  }
+  70% {
+    transform: rotate(16deg);
+  }
+}
+
+/* ---------- Presenting (bubble up) ---------- */
+
+/* The arm lowers back to the tucked base transform; the character breathes
+   gently and the head sways so it never looks frozen beside the bubble. */
+.character[data-state='presenting'] #body {
+  animation: breathe 3200ms ease-in-out infinite;
+}
+
+.character[data-state='presenting'] #head {
+  animation: head-sway 5200ms ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
   }
   50% {
-    transform: rotate(13deg);
+    transform: scale(1.01, 1.025);
+  }
+}
+
+@keyframes head-sway {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(1.6deg);
+  }
+  65% {
+    transform: rotate(-1.4deg);
+  }
+}
+
+@keyframes blink {
+  0%,
+  91%,
+  97%,
+  100% {
+    transform: scaleY(1);
+  }
+  94% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes antenna-sway {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+
+/* Final minute: the character hops with excitement. Gated to presenting so it
+   can never fight the walking bob (both animate the svg's transform). */
+.character[data-state='presenting'][data-urgency='now'] svg {
+  animation: hop 640ms cubic-bezier(0.3, 0, 0.4, 1) infinite;
+}
+
+@keyframes hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+  55% {
+    transform: translateY(0);
+  }
+  70% {
+    transform: translateY(-3px);
+  }
+  80% {
+    transform: translateY(0);
   }
 }
 
@@ -104,6 +313,7 @@ body {
   padding: 16px 18px;
   background: var(--bubble-bg);
   color: var(--bubble-fg);
+  border: 1px solid rgba(91, 141, 239, 0.25);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   /* The bubble is the one interactive surface. */
@@ -134,7 +344,31 @@ body {
 .bubble__time {
   margin: 0 0 12px;
   font-size: 13px;
+  font-weight: 500;
   color: #5a6072;
+  transition: color 300ms ease;
+}
+
+/* Urgency escalation for the countdown line (set via data-urgency). */
+.bubble[data-urgency='soon'] .bubble__time {
+  color: var(--urgency-soon);
+  font-weight: 600;
+}
+
+.bubble[data-urgency='now'] .bubble__time {
+  color: var(--urgency-now);
+  font-weight: 700;
+  animation: countdown-pulse 1000ms ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 .bubble__join {
@@ -143,16 +377,23 @@ body {
   padding: 9px 14px;
   border: none;
   border-radius: 10px;
-  background: var(--accent);
+  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
   color: #fff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 160ms ease;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
 }
 
 .bubble__join:hover {
-  background: var(--accent-strong);
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.bubble__join:active {
+  transform: translateY(0);
 }
 
 .bubble__join:focus-visible {
@@ -172,13 +413,15 @@ body {
   border-left: 12px solid var(--bubble-bg);
 }
 
-/* Respect users who ask the OS to minimize motion. */
+/* Respect users who ask the OS to minimize motion: no keyframe animation at
+   all, and transitions collapse to (effectively) instant state changes. */
 @media (prefers-reduced-motion: reduce) {
   .character,
-  .character[data-state='walking'] svg,
-  .character[data-state='waving'] #arm,
-  .bubble {
-    transition-duration: 1ms;
-    animation: none;
+  .character svg,
+  .character svg *,
+  .bubble,
+  .bubble * {
+    transition-duration: 1ms !important;
+    animation: none !important;
   }
 }

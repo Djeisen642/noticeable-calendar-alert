@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { getCountdownDelta, shouldAlert, formatCountdown } from './countdown.ts';
+import {
+  getCountdownDelta,
+  shouldAlert,
+  formatCountdown,
+  countdownUrgency,
+  NOW_THRESHOLD_MS,
+  SOON_THRESHOLD_MS,
+} from './countdown.ts';
 
 // A fixed reference clock keeps every assertion deterministic.
 const NOW = new Date('2026-06-26T09:00:00.000Z');
@@ -58,6 +65,29 @@ describe('shouldAlert', () => {
 
   it('rejects a negative lead time', () => {
     expect(() => shouldAlert(minutesFromNow(5), NOW, -1)).toThrow(RangeError);
+  });
+});
+
+describe('countdownUrgency', () => {
+  const atMs = (ms: number): Date => new Date(NOW.getTime() + ms);
+
+  it('is calm while the meeting is comfortably away', () => {
+    expect(countdownUrgency(getCountdownDelta(minutesFromNow(5), NOW))).toBe('calm');
+  });
+
+  it('escalates to soon at the threshold (inclusive)', () => {
+    expect(countdownUrgency(getCountdownDelta(atMs(SOON_THRESHOLD_MS), NOW))).toBe('soon');
+    expect(countdownUrgency(getCountdownDelta(atMs(SOON_THRESHOLD_MS + 1), NOW))).toBe('calm');
+  });
+
+  it('escalates to now at the final-minute threshold (inclusive)', () => {
+    expect(countdownUrgency(getCountdownDelta(atMs(NOW_THRESHOLD_MS), NOW))).toBe('now');
+    expect(countdownUrgency(getCountdownDelta(atMs(NOW_THRESHOLD_MS + 1), NOW))).toBe('soon');
+  });
+
+  it('stays at now once the meeting has started', () => {
+    expect(countdownUrgency(getCountdownDelta(NOW, NOW))).toBe('now');
+    expect(countdownUrgency(getCountdownDelta(minutesFromNow(-3), NOW))).toBe('now');
   });
 });
 

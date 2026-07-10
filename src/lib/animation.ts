@@ -7,7 +7,14 @@
  * classes/attributes and awaits the corresponding DOM events.
  */
 
-export type CharacterState = 'idle' | 'walking' | 'waving';
+import type { Urgency } from './countdown.ts';
+
+/**
+ * The character's lifecycle on stage:
+ *   idle → walking (entrance) → waving (greeting) → presenting (bubble up,
+ *   breathing/blinking) → walking (exit) → idle.
+ */
+export type CharacterState = 'idle' | 'walking' | 'waving' | 'presenting';
 
 /** The DOM nodes the animator drives. Resolved once at startup. */
 export interface OverlayElements {
@@ -24,6 +31,8 @@ export interface BubbleContent {
   readonly title: string;
   readonly countdown: string;
   readonly joinUrl: string | null;
+  /** How agitated the character/countdown should look (see countdown.ts). */
+  readonly urgency: Urgency;
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -38,8 +47,11 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
  */
 const WALK_TIMEOUT_MS = 1400;
 const BUBBLE_FADE_TIMEOUT_MS = 600;
-/** How long the character holds the wave before the bubble appears. */
-const WAVE_HOLD_MS = 900;
+/**
+ * How long the greeting plays before the bubble appears: long enough for the
+ * arm to raise (~260ms transition in styles.css) plus two full wave cycles.
+ */
+const WAVE_HOLD_MS = 1400;
 
 /**
  * Await a specific CSS transition on `el`, with a timeout fallback so a missed
@@ -65,8 +77,8 @@ function awaitTransition(el: HTMLElement, property: string, timeoutMs: number): 
 
 /**
  * Drives the full attention sequence:
- *   off-screen right → walk in → stop → wave → fade in the speech bubble,
- * and the reverse on dismissal.
+ *   off-screen right → walk in → stop → wave → fade in the speech bubble →
+ *   settle into presenting (breathing, blinking), and the reverse on dismissal.
  */
 export class OverlayAnimator {
   private readonly el: OverlayElements;
@@ -89,7 +101,7 @@ export class OverlayAnimator {
     this.el.character.classList.add('is-onstage');
     await awaitTransition(this.el.character, 'transform', WALK_TIMEOUT_MS);
 
-    // 2. Plant feet and wave.
+    // 2. Plant feet, raise the arm, and wave.
     this.setState('waving');
     await sleep(WAVE_HOLD_MS);
 
@@ -98,6 +110,9 @@ export class OverlayAnimator {
     // Force a reflow so the opacity transition actually runs.
     void this.el.bubble.offsetWidth;
     this.el.bubble.classList.add('is-visible');
+
+    // 4. Settle in: lower the arm and idle (breathe/blink) beside the bubble.
+    this.setState('presenting');
   }
 
   /** Reverse of `present`: hide the bubble, then walk the character off. */
@@ -116,15 +131,26 @@ export class OverlayAnimator {
   private renderBubble(content: BubbleContent): void {
     this.el.title.textContent = content.title;
     this.el.time.textContent = content.countdown;
+    this.setUrgency(content.urgency);
 
     const hasLink = content.joinUrl !== null && content.joinUrl.length > 0;
     this.el.joinButton.hidden = !hasLink;
     this.el.joinButton.dataset.url = content.joinUrl ?? '';
   }
 
-  /** Update just the countdown text without replaying the entrance. */
-  updateCountdown(countdown: string): void {
+  /** Update just the countdown (text + urgency) without replaying the entrance. */
+  updateCountdown(countdown: string, urgency: Urgency): void {
     this.el.time.textContent = countdown;
+    this.setUrgency(urgency);
+  }
+
+  /**
+   * Reflect urgency on both the character and the bubble: styles.css keys the
+   * final-minute hop and the countdown color/pulse off these attributes.
+   */
+  private setUrgency(urgency: Urgency): void {
+    this.el.character.dataset.urgency = urgency;
+    this.el.bubble.dataset.urgency = urgency;
   }
 
   private setState(state: CharacterState): void {
