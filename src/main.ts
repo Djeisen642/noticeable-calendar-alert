@@ -11,12 +11,7 @@ import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
 import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
 import { mountCharacter } from './lib/character.ts';
 import { createCalendarSync } from './lib/google/config.ts';
-import {
-  getCountdownDelta,
-  formatCountdown,
-  countdownUrgency,
-  type CountdownDelta,
-} from './lib/countdown.ts';
+import { getCountdownDelta, describeCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent } from './lib/alert.ts';
 import { demoBubbleContent } from './lib/demo.ts';
 import { nextFetchDelayMs } from './lib/poll.ts';
@@ -36,7 +31,12 @@ import {
   showError,
 } from './lib/tauri.ts';
 
-/** How far ahead of a meeting to fire the overlay. */
+/**
+ * How far ahead of a meeting to fire the overlay. Keep this comfortably above
+ * the urgency ramp in lib/countdown.ts (SOON at 3m, NOW at 1m): the ramp
+ * partitions this window, and a lead at or below a threshold would make the
+ * overlay open already escalated, skipping the calm phase entirely.
+ */
 const LEAD_TIME_MINUTES = 5;
 /**
  * How far ahead to fetch events. This is deliberately *much* wider than the
@@ -298,7 +298,7 @@ class AlertController {
 
       if (this.activeEventId === next.id) {
         // Already showing this meeting — just keep the countdown fresh.
-        this.animator.updateCountdown(formatCountdown(delta), countdownUrgency(delta));
+        this.animator.updateCountdown(describeCountdown(delta));
         if (delta.isPast) await this.dismiss();
         return;
       }
@@ -332,9 +332,8 @@ class AlertController {
     await setClickThrough(false);
     await this.animator.present({
       title: event.title,
-      countdown: formatCountdown(delta),
       joinUrl: event.joinUrl,
-      urgency: countdownUrgency(delta),
+      ...describeCountdown(delta),
     });
   }
 

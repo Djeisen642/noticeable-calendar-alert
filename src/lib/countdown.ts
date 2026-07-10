@@ -111,3 +111,18 @@ export function formatCountdown(delta: CountdownDelta): string {
   const padSeconds = String(delta.seconds).padStart(2, '0');
   return `in ${delta.minutes}m ${padSeconds}s`;
 }
+
+/**
+ * The two delta-derived fields the speech bubble displays. Always derive them
+ * together (via `describeCountdown`) so the countdown text and the urgency
+ * styling can never disagree about how close the meeting is.
+ */
+export interface CountdownDisplay {
+  readonly countdown: string;
+  readonly urgency: Urgency;
+}
+
+/** Derive the bubble's countdown text and urgency level from one delta. */
+export function describeCountdown(delta: CountdownDelta): CountdownDisplay {
+  return { countdown: formatCountdown(delta), urgency: countdownUrgency(delta) };
+}

@@ -4,6 +4,7 @@ import {
   shouldAlert,
   formatCountdown,
   countdownUrgency,
+  describeCountdown,
   NOW_THRESHOLD_MS,
   SOON_THRESHOLD_MS,
 } from './countdown.ts';
@@ -88,6 +89,15 @@ describe('countdownUrgency', () => {
   it('stays at now once the meeting has started', () => {
     expect(countdownUrgency(getCountdownDelta(NOW, NOW))).toBe('now');
     expect(countdownUrgency(getCountdownDelta(minutesFromNow(-3), NOW))).toBe('now');
+  });
+});
+
+describe('describeCountdown', () => {
+  it('derives the countdown text and urgency from the same delta', () => {
+    // The bubble must never show a text/urgency pair that disagrees about how
+    // close the meeting is — this helper is the single derivation point.
+    const delta = getCountdownDelta(new Date(NOW.getTime() + 45_000), NOW);
+    expect(describeCountdown(delta)).toEqual({ countdown: 'in 45s', urgency: 'now' });
   });
 });
 

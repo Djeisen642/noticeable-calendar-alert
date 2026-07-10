@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { CHARACTER_PART_IDS, CHARACTER_SVG, mountCharacter } from './character.ts';
 
@@ -22,6 +23,20 @@ describe('CHARACTER_SVG', () => {
     expect(CHARACTER_SVG).not.toMatch(/<script/i);
     expect(CHARACTER_SVG).not.toMatch(/\son[a-z]+\s*=/i);
     expect(CHARACTER_SVG).not.toMatch(/href/i);
+  });
+});
+
+describe('styles.css part-id selectors', () => {
+  it('only reference parts the character actually declares', () => {
+    // Close the loop from the other direction: a choreography rule targeting a
+    // renamed/removed part would silently do nothing. Id selectors appear as
+    // `#leg-left,` / `#cape {`; hex colors never match (a letter run in a hex
+    // color is always followed by a hex digit or punctuation, not `\s,{`).
+    const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+    const declared = new Set<string>(CHARACTER_PART_IDS);
+    for (const [, id] of css.matchAll(/#([a-z][a-z-]*)(?=[\s,{])/g)) {
+      expect(declared.has(id), `styles.css targets #${id}, not in CHARACTER_PART_IDS`).toBe(true);
+    }
   });
 });
 

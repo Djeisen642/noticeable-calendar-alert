@@ -7,7 +7,7 @@
  * classes/attributes and awaits the corresponding DOM events.
  */
 
-import type { Urgency } from './countdown.ts';
+import type { CountdownDisplay, Urgency } from './countdown.ts';
 
 /**
  * The character's lifecycle on stage:
@@ -27,12 +27,9 @@ export interface OverlayElements {
 }
 
 /** Content rendered into the speech bubble. */
-export interface BubbleContent {
+export interface BubbleContent extends CountdownDisplay {
   readonly title: string;
-  readonly countdown: string;
   readonly joinUrl: string | null;
-  /** How agitated the character/countdown should look (see countdown.ts). */
-  readonly urgency: Urgency;
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -83,6 +80,8 @@ function awaitTransition(el: HTMLElement, property: string, timeoutMs: number): 
 export class OverlayAnimator {
   private readonly el: OverlayElements;
   private state: CharacterState = 'idle';
+  /** Last urgency pushed to the DOM, so the per-second tick skips no-op writes. */
+  private urgency: Urgency | null = null;
 
   constructor(elements: OverlayElements) {
     this.el = elements;
@@ -139,18 +138,21 @@ export class OverlayAnimator {
   }
 
   /** Update just the countdown (text + urgency) without replaying the entrance. */
-  updateCountdown(countdown: string, urgency: Urgency): void {
-    this.el.time.textContent = countdown;
-    this.setUrgency(urgency);
+  updateCountdown(display: CountdownDisplay): void {
+    this.el.time.textContent = display.countdown;
+    this.setUrgency(display.urgency);
   }
 
   /**
-   * Reflect urgency on both the character and the bubble: styles.css keys the
-   * final-minute hop and the countdown color/pulse off these attributes.
+   * Reflect urgency on the stage — the one shared ancestor — so the character
+   * hop and the countdown color/pulse in styles.css can never disagree. Writes
+   * are skipped while the level is unchanged (it flips at most twice per alert,
+   * but this is called every second).
    */
   private setUrgency(urgency: Urgency): void {
-    this.el.character.dataset.urgency = urgency;
-    this.el.bubble.dataset.urgency = urgency;
+    if (urgency === this.urgency) return;
+    this.urgency = urgency;
+    this.el.stage.dataset.urgency = urgency;
   }
 
   private setState(state: CharacterState): void {
