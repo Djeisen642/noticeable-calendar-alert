@@ -2,9 +2,13 @@
 
 An ultra-lightweight, open-source Windows **system-tray utility** that watches
 your Google Calendar and, right before a meeting starts, summons an aggressive
-**always-on-top** overlay: a vector character walks in from the right edge of
-your screen, waves, and pops a speech bubble with the meeting title and a
-**Join Call** button.
+**always-on-top** overlay: a little vector **herald knight** — plumed helm,
+crimson cape, shield crest — marches in from the right edge of your screen,
+raises a gauntlet to wave, and pops a speech bubble with the meeting title and
+a **Join Call** button. While the bubble is up the knight blinks and breathes
+beside it, plume and cape swaying — and in the final minute it starts hopping
+while the countdown pulses red, so the alert gets harder to ignore exactly
+when it should.
 
 Built with **Tauri v2** + **Vanilla TypeScript + Vite** — no React, no UI
 framework — for the smallest possible memory footprint and butter-smooth,
@@ -27,12 +31,13 @@ GPU-composited animation.
 ```
 src/
   main.ts              # Wires calendar polling → overlay lifecycle
-  styles.css           # Transparent overlay + @keyframes (walk / wave / fade)
+  styles.css           # Transparent overlay + choreography (walk / wave / blink / hop)
   lib/
-    countdown.ts       # Pure meeting-countdown math (unit-tested)
+    countdown.ts       # Pure meeting-countdown math + urgency levels (unit-tested)
     countdown.test.ts  # Vitest specs for the delta calculations
     calendar.ts        # Google Calendar sync interface + deterministic mock
-    animation.ts       # OverlayAnimator state machine (walk → wave → bubble)
+    character.ts       # The mascot SVG — named animatable parts (unit-tested)
+    animation.ts       # OverlayAnimator (walk → wave → bubble → presenting)
     tauri.ts           # Optional bridge to the Tauri runtime (degrades in browser)
 src-tauri/
   src/lib.rs           # Tray icon, overlay window setup, click-through command

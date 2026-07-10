@@ -7,7 +7,14 @@
  * classes/attributes and awaits the corresponding DOM events.
  */
 
-export type CharacterState = 'idle' | 'walking' | 'waving';
+import type { CountdownDisplay, Urgency } from './countdown.ts';
+
+/**
+ * The character's lifecycle on stage:
+ *   idle → walking (entrance) → waving (greeting) → presenting (bubble up,
+ *   breathing/blinking) → walking (exit) → idle.
+ */
+export type CharacterState = 'idle' | 'walking' | 'waving' | 'presenting';
 
 /** The DOM nodes the animator drives. Resolved once at startup. */
 export interface OverlayElements {
@@ -20,9 +27,8 @@ export interface OverlayElements {
 }
 
 /** Content rendered into the speech bubble. */
-export interface BubbleContent {
+export interface BubbleContent extends CountdownDisplay {
   readonly title: string;
-  readonly countdown: string;
   readonly joinUrl: string | null;
 }
 
@@ -38,8 +44,11 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
  */
 const WALK_TIMEOUT_MS = 1400;
 const BUBBLE_FADE_TIMEOUT_MS = 600;
-/** How long the character holds the wave before the bubble appears. */
-const WAVE_HOLD_MS = 900;
+/**
+ * How long the greeting plays before the bubble appears: long enough for the
+ * arm to raise (~260ms transition in styles.css) plus two full wave cycles.
+ */
+const WAVE_HOLD_MS = 1400;
 
 /**
  * Await a specific CSS transition on `el`, with a timeout fallback so a missed
@@ -65,12 +74,14 @@ function awaitTransition(el: HTMLElement, property: string, timeoutMs: number): 
 
 /**
  * Drives the full attention sequence:
- *   off-screen right → walk in → stop → wave → fade in the speech bubble,
- * and the reverse on dismissal.
+ *   off-screen right → walk in → stop → wave → fade in the speech bubble →
+ *   settle into presenting (breathing, blinking), and the reverse on dismissal.
  */
 export class OverlayAnimator {
   private readonly el: OverlayElements;
   private state: CharacterState = 'idle';
+  /** Last urgency pushed to the DOM, so the per-second tick skips no-op writes. */
+  private urgency: Urgency | null = null;
 
   constructor(elements: OverlayElements) {
     this.el = elements;
@@ -89,7 +100,7 @@ export class OverlayAnimator {
     this.el.character.classList.add('is-onstage');
     await awaitTransition(this.el.character, 'transform', WALK_TIMEOUT_MS);
 
-    // 2. Plant feet and wave.
+    // 2. Plant feet, raise the arm, and wave.
     this.setState('waving');
     await sleep(WAVE_HOLD_MS);
 
@@ -98,6 +109,9 @@ export class OverlayAnimator {
     // Force a reflow so the opacity transition actually runs.
     void this.el.bubble.offsetWidth;
     this.el.bubble.classList.add('is-visible');
+
+    // 4. Settle in: lower the arm and idle (breathe/blink) beside the bubble.
+    this.setState('presenting');
   }
 
   /** Reverse of `present`: hide the bubble, then walk the character off. */
@@ -116,15 +130,29 @@ export class OverlayAnimator {
   private renderBubble(content: BubbleContent): void {
     this.el.title.textContent = content.title;
     this.el.time.textContent = content.countdown;
+    this.setUrgency(content.urgency);
 
     const hasLink = content.joinUrl !== null && content.joinUrl.length > 0;
     this.el.joinButton.hidden = !hasLink;
     this.el.joinButton.dataset.url = content.joinUrl ?? '';
   }
 
-  /** Update just the countdown text without replaying the entrance. */
-  updateCountdown(countdown: string): void {
-    this.el.time.textContent = countdown;
+  /** Update just the countdown (text + urgency) without replaying the entrance. */
+  updateCountdown(display: CountdownDisplay): void {
+    this.el.time.textContent = display.countdown;
+    this.setUrgency(display.urgency);
+  }
+
+  /**
+   * Reflect urgency on the stage — the one shared ancestor — so the character
+   * hop and the countdown color/pulse in styles.css can never disagree. Writes
+   * are skipped while the level is unchanged (it flips at most twice per alert,
+   * but this is called every second).
+   */
+  private setUrgency(urgency: Urgency): void {
+    if (urgency === this.urgency) return;
+    this.urgency = urgency;
+    this.el.stage.dataset.urgency = urgency;
   }
 
   private setState(state: CharacterState): void {

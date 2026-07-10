@@ -7,7 +7,7 @@
  */
 
 import type { BubbleContent } from './animation.ts';
-import { formatCountdown, getCountdownDelta } from './countdown.ts';
+import { describeCountdown, getCountdownDelta } from './countdown.ts';
 import { MS_PER_MINUTE } from './time.ts';
 
 /** Sample meeting title shown in the preview bubble. */
@@ -30,7 +30,7 @@ export function demoBubbleContent(now: Date = new Date()): BubbleContent {
   const start = new Date(now.getTime() + DEMO_LEAD_MINUTES * MS_PER_MINUTE);
   return {
     title: DEMO_TITLE,
-    countdown: formatCountdown(getCountdownDelta(start, now)),
     joinUrl: DEMO_JOIN_URL,
+    ...describeCountdown(getCountdownDelta(start, now)),
   };
 }
