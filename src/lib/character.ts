@@ -10,7 +10,8 @@
  *
  * Animatable parts (each id is a CSS animation hook — see styles.css):
  *   #leg-left / #leg-right — alternate stepping while walking
- *   #arm-rest             — the tucked arm; swings counter to the legs
+ *   #arm-rest             — the sword arm, blade point-down at the side;
+ *                           swings counter to the legs while walking
  *   #arm-wave             — the greeting arm; tucked down while walking,
  *                           raised + waved on arrival, lowered while presenting
  *   #body                 — breathes gently while presenting
@@ -58,6 +59,11 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
       <stop offset="0" stop-color="#f0c463" />
       <stop offset="1" stop-color="#c9952f" />
     </linearGradient>
+    <linearGradient id="bladeFill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#eef2f8" />
+      <stop offset="0.5" stop-color="#c3cddd" />
+      <stop offset="1" stop-color="#93a0b6" />
+    </linearGradient>
   </defs>
 
   <!-- Ground shadow -->
@@ -84,11 +90,18 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
     <ellipse cx="76" cy="175.5" rx="7" ry="3.4" fill="#727e96" />
   </g>
 
-  <!-- Resting arm (tucked behind the body), with a gold vambrace band -->
+  <!-- Sword arm (tucked at the side), gold vambrace band, blade point-down in
+       a relaxed guard stance. Drawn before the fist so the gauntlet grips it. -->
   <g id="arm-rest">
     <rect x="29" y="92" width="14" height="46" rx="7" fill="#97a2b8" />
     <rect x="29" y="118" width="14" height="9" rx="4.5" fill="url(#goldFill)" />
+    <circle cx="36" cy="128.5" r="4" fill="url(#goldFill)" />
+    <rect x="33.6" y="130" width="4.8" height="18" rx="2" fill="#6b3f22" />
+    <rect x="27" y="147" width="18" height="5.5" rx="2.75" fill="url(#goldFill)" />
+    <path d="M32.6 152.5 L34.2 169 L36 175.5 L37.8 169 L39.4 152.5 Z" fill="url(#bladeFill)" />
+    <line x1="36" y1="154" x2="36" y2="169" stroke="#ffffff" stroke-width="1" opacity="0.55" />
     <circle cx="36" cy="140" r="8.5" fill="#6d788f" />
+    <circle cx="36" cy="140" r="8.5" fill="none" stroke="#5d6880" stroke-width="1.5" />
   </g>
 
   <!-- Body: cuirass, faulds, gold belt + buckle, crest shield, pauldrons -->
