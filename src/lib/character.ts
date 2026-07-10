@@ -90,22 +90,20 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
     <ellipse cx="76" cy="175.5" rx="7" ry="3.4" fill="#727e96" />
   </g>
 
-  <!-- Sword arm (tucked at the side), gold vambrace band. The longsword is
-       drawn vertical through the fist, then angled 20deg outward so the long
-       blade clears the ground in a heroic guard stance. Drawn before the fist
-       so the gauntlet grips it. -->
+  <!-- Sword arm, gold vambrace band. The scimitar is held ALOFT: a long
+       curved blade (cutting edge outward, flared toward the tip) rises from
+       the fist past the forearm. Drawn before the fist so the gauntlet grips
+       it just under the gold guard; the gem pommel peeks below the fist. -->
   <g id="arm-rest">
     <rect x="29" y="92" width="14" height="46" rx="7" fill="#97a2b8" />
     <rect x="29" y="118" width="14" height="9" rx="4.5" fill="url(#goldFill)" />
-    <g transform="rotate(10 33 140)">
-      <circle cx="33" cy="124" r="5" fill="url(#goldFill)" />
-      <circle cx="33" cy="124" r="2.4" fill="#b23a48" />
-      <rect x="30.2" y="126" width="5.6" height="20" rx="2.4" fill="#6b3f22" />
-      <path d="M28.2 151 L30.5 178 L33 186 L35.5 178 L37.8 151 Z" fill="url(#bladeFill)" />
-      <rect x="32.3" y="154" width="1.4" height="27" rx="0.7" fill="#93a0b6" />
-      <line x1="29.8" y1="154" x2="31.6" y2="180" stroke="#ffffff" stroke-width="0.9" opacity="0.6" />
-      <path d="M20 149.5 Q33 143.5 46 149.5 Q33 155.5 20 149.5 Z" fill="url(#goldFill)" />
-      <circle cx="33" cy="149.4" r="2.8" fill="#c9952f" />
+    <g transform="rotate(-4 36 140)">
+      <path d="M32 126 C29 105 24 86 13 62 L12 51 C24 61 33 90 40 126 Z" fill="url(#bladeFill)" />
+      <path d="M30 116 C26 97 22 83 16 65" stroke="#ffffff" stroke-width="1" fill="none" opacity="0.6" />
+      <path d="M26 128 Q36 123.5 46 128 Q36 132.5 26 128 Z" fill="url(#goldFill)" />
+      <rect x="33.2" y="130" width="5.6" height="15" rx="2.4" fill="#6b3f22" />
+      <circle cx="36" cy="151.5" r="4.5" fill="url(#goldFill)" />
+      <circle cx="36" cy="151.5" r="2.2" fill="#b23a48" />
     </g>
     <circle cx="36" cy="140" r="8.5" fill="#6d788f" />
     <circle cx="36" cy="140" r="8.5" fill="none" stroke="#5d6880" stroke-width="1.5" />
