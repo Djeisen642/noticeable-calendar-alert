@@ -90,16 +90,23 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
     <ellipse cx="76" cy="175.5" rx="7" ry="3.4" fill="#727e96" />
   </g>
 
-  <!-- Sword arm (tucked at the side), gold vambrace band, blade point-down in
-       a relaxed guard stance. Drawn before the fist so the gauntlet grips it. -->
+  <!-- Sword arm (tucked at the side), gold vambrace band. The longsword is
+       drawn vertical through the fist, then angled 20deg outward so the long
+       blade clears the ground in a heroic guard stance. Drawn before the fist
+       so the gauntlet grips it. -->
   <g id="arm-rest">
     <rect x="29" y="92" width="14" height="46" rx="7" fill="#97a2b8" />
     <rect x="29" y="118" width="14" height="9" rx="4.5" fill="url(#goldFill)" />
-    <circle cx="36" cy="128.5" r="4" fill="url(#goldFill)" />
-    <rect x="33.6" y="130" width="4.8" height="18" rx="2" fill="#6b3f22" />
-    <rect x="27" y="147" width="18" height="5.5" rx="2.75" fill="url(#goldFill)" />
-    <path d="M32.6 152.5 L34.2 169 L36 175.5 L37.8 169 L39.4 152.5 Z" fill="url(#bladeFill)" />
-    <line x1="36" y1="154" x2="36" y2="169" stroke="#ffffff" stroke-width="1" opacity="0.55" />
+    <g transform="rotate(10 33 140)">
+      <circle cx="33" cy="124" r="5" fill="url(#goldFill)" />
+      <circle cx="33" cy="124" r="2.4" fill="#b23a48" />
+      <rect x="30.2" y="126" width="5.6" height="20" rx="2.4" fill="#6b3f22" />
+      <path d="M28.2 151 L30.5 178 L33 186 L35.5 178 L37.8 151 Z" fill="url(#bladeFill)" />
+      <rect x="32.3" y="154" width="1.4" height="27" rx="0.7" fill="#93a0b6" />
+      <line x1="29.8" y1="154" x2="31.6" y2="180" stroke="#ffffff" stroke-width="0.9" opacity="0.6" />
+      <path d="M20 149.5 Q33 143.5 46 149.5 Q33 155.5 20 149.5 Z" fill="url(#goldFill)" />
+      <circle cx="33" cy="149.4" r="2.8" fill="#c9952f" />
+    </g>
     <circle cx="36" cy="140" r="8.5" fill="#6d788f" />
     <circle cx="36" cy="140" r="8.5" fill="none" stroke="#5d6880" stroke-width="1.5" />
   </g>
