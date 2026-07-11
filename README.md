@@ -2,13 +2,13 @@
 
 An ultra-lightweight, open-source Windows **system-tray utility** that watches
 your Google Calendar and, right before a meeting starts, summons an aggressive
-**always-on-top** overlay: a grim vector **knight** — ember eyes glowing in a
-scowling visor, jagged flame plume, blood-red cape, scimitar raised — marches
-in from the right edge of your screen, hails you with a gauntlet, and pops a
+**always-on-top** overlay: a valiant vector **knight** — eyes glowing in his
+visor, flowing plume and cape, gauntlet resting on the pommel of a planted
+greatsword — marches in from the right edge of your screen, waves, and pops a
 speech bubble with the meeting title and a **Join Call** button. While the
-bubble is up the knight breathes and glares beside it, plume and cape swaying —
-and in the final minute it starts hopping while the countdown pulses red, so
-the alert gets harder to ignore exactly when it should.
+bubble is up the knight stands watch beside it, breathing, blinking, plume and
+cape swaying — and in the final minute he starts hopping while the countdown
+pulses red, so the alert gets harder to ignore exactly when it should.
 
 Built with **Tauri v2** + **Vanilla TypeScript + Vite** — no React, no UI
 framework — for the smallest possible memory footprint and butter-smooth,
