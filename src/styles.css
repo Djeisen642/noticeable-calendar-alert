@@ -92,7 +92,6 @@ body {
 .character #cape,
 .character #leg-left,
 .character #leg-right,
-.character #arm-rest,
 .character #arm-wave,
 .character #body,
 .character #head,
@@ -101,14 +100,19 @@ body {
   transform-box: fill-box;
 }
 
+/* The sword arm pivots at the shoulder, pinned in viewBox coordinates: its
+   raised scimitar stretches the group's bounding box, so a fill-box
+   percentage origin would land on the blade instead of the joint. Keep in
+   sync with the shoulder position in lib/character.ts. */
+.character #arm-rest {
+  transform-box: view-box;
+  transform-origin: 36px 97px;
+}
+
 /* Pivot points. */
 .character #leg-left,
 .character #leg-right {
   transform-origin: 50% 12%; /* the hip */
-}
-
-.character #arm-rest {
-  transform-origin: 50% 10%; /* the shoulder */
 }
 
 .character #eyes {
@@ -208,13 +212,14 @@ body {
   }
 }
 
+/* Gentler than the legs: this arm carries the raised scimitar. */
 @keyframes arm-swing-back {
   0%,
   100% {
-    transform: rotate(-13deg);
+    transform: rotate(-9deg);
   }
   50% {
-    transform: rotate(13deg);
+    transform: rotate(9deg);
   }
 }
 

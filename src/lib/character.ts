@@ -90,23 +90,25 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
     <ellipse cx="76" cy="175.5" rx="7" ry="3.4" fill="#727e96" />
   </g>
 
-  <!-- Sword arm, gold vambrace band. The scimitar is held ALOFT: a long
-       curved blade (cutting edge outward, flared toward the tip) rises from
-       the fist past the forearm. Drawn before the fist so the gauntlet grips
-       it just under the gold guard; the gem pommel peeks below the fist. -->
+  <!-- Sword arm: bent at the elbow so the forearm raises the fist to waist
+       height, with the scimitar continuing that line — a long curved blade
+       (cutting edge outward, flared toward the sharp tip) standing beside the
+       helm. Gold vambrace on the forearm; blade/grip drawn before the fist so
+       the gauntlet grips it just under the gold guard. NOTE: styles.css pins
+       this group's swing pivot to the shoulder at 36px 97px (view-box coords)
+       because the blade stretches the group's bounding box. -->
   <g id="arm-rest">
-    <rect x="29" y="92" width="14" height="46" rx="7" fill="#97a2b8" />
-    <rect x="29" y="118" width="14" height="9" rx="4.5" fill="url(#goldFill)" />
-    <g transform="rotate(-4 36 140)">
-      <path d="M32 126 C29 105 24 86 13 62 L12 51 C24 61 33 90 40 126 Z" fill="url(#bladeFill)" />
-      <path d="M30 116 C26 97 22 83 16 65" stroke="#ffffff" stroke-width="1" fill="none" opacity="0.6" />
-      <path d="M26 128 Q36 123.5 46 128 Q36 132.5 26 128 Z" fill="url(#goldFill)" />
-      <rect x="33.2" y="130" width="5.6" height="15" rx="2.4" fill="#6b3f22" />
-      <circle cx="36" cy="151.5" r="4.5" fill="url(#goldFill)" />
-      <circle cx="36" cy="151.5" r="2.2" fill="#b23a48" />
-    </g>
-    <circle cx="36" cy="140" r="8.5" fill="#6d788f" />
-    <circle cx="36" cy="140" r="8.5" fill="none" stroke="#5d6880" stroke-width="1.5" />
+    <path d="M36 98 Q31 106 29.5 117" stroke="#97a2b8" stroke-width="13" stroke-linecap="round" fill="none" />
+    <path d="M29.5 117 Q26 112 22.5 105" stroke="#97a2b8" stroke-width="12" stroke-linecap="round" fill="none" />
+    <path d="M27.5 113.5 Q26 111 24.5 108.5" stroke="url(#goldFill)" stroke-width="12" stroke-linecap="butt" fill="none" />
+    <path d="M17 93 C13 75 8 58 2.5 36 L2 30 C10 40 18 62 25 93 Z" fill="url(#bladeFill)" />
+    <path d="M15 84 C11 70 8 58 5 42" stroke="#ffffff" stroke-width="1" fill="none" opacity="0.6" />
+    <path d="M11.5 96 Q21 90.5 30.5 94 Q21.5 99.5 11.5 96 Z" fill="url(#goldFill)" />
+    <rect x="18.2" y="95.5" width="5.6" height="13" rx="2.4" fill="#6b3f22" transform="rotate(-10 21 101)" />
+    <circle cx="23" cy="112.5" r="4.5" fill="url(#goldFill)" />
+    <circle cx="23" cy="112.5" r="2.2" fill="#b23a48" />
+    <circle cx="21" cy="101" r="8.5" fill="#6d788f" />
+    <circle cx="21" cy="101" r="8.5" fill="none" stroke="#5d6880" stroke-width="1.5" />
   </g>
 
   <!-- Body: cuirass, faulds, gold belt + buckle, crest shield, pauldrons -->
