@@ -24,6 +24,14 @@ describe('CHARACTER_SVG', () => {
     expect(CHARACTER_SVG).not.toMatch(/\son[a-z]+\s*=/i);
     expect(CHARACTER_SVG).not.toMatch(/href/i);
   });
+
+  it('matches the committed README asset docs/character.svg', () => {
+    // The README embeds the mascot from docs/character.svg. Guard against the
+    // asset drifting from the real character: after editing CHARACTER_SVG,
+    // regenerate the file (write CHARACTER_SVG + '\n' to docs/character.svg).
+    const asset = readFileSync(new URL('../../docs/character.svg', import.meta.url), 'utf8');
+    expect(asset).toBe(`${CHARACTER_SVG}\n`);
+  });
 });
 
 describe('styles.css part-id selectors', () => {

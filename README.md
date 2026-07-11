@@ -1,5 +1,7 @@
 # Noticeable Calendar Alert
 
+<img align="right" src="docs/character.svg" alt="The herald knight mascot: a silver-armored knight with a crimson plume and cape, glowing eyes behind an angular visor, one gauntlet resting on the pommel of a greatsword planted at his side, the other raised in a wave." width="140" height="190">
+
 An ultra-lightweight, open-source Windows **system-tray utility** that watches
 your Google Calendar and, right before a meeting starts, summons an aggressive
 **always-on-top** overlay: a valiant vector **knight** — eyes glowing in his
