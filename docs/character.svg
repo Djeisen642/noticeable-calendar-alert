@@ -1,49 +1,4 @@
-/**
- * The vector character — a valiant herald knight, gauntlet resting on the
- * pommel of a planted greatsword — as a single self-contained module.
- *
- * Keeping the SVG here (instead of inlined in `index.html`) gives the mascot
- * one obvious home: every animatable part has a stable id that `styles.css`
- * targets, and `character.test.ts` guards those ids (in both directions: the
- * SVG defines each exactly once, and every id selector in styles.css names a
- * declared part) so a redesign can't silently break the choreography.
- *
- * Animatable parts (each id is a CSS animation hook — see styles.css):
- *   #leg-left / #leg-right — alternate stepping while walking
- *   #arm-rest             — the sword arm: gauntlet on the pommel of the
- *                           planted greatsword; sways gently while walking
- *   #arm-wave             — the greeting arm; tucked down while walking,
- *                           raised + waved on arrival, lowered while presenting
- *   #body                 — breathes gently while presenting
- *   #head                 — subtle sway while presenting
- *   #eyes                 — periodic blink whenever the character is on stage
- *   #plume                — the helm's crimson plume; sways on stage
- *   #cape                 — the cape; billows softly whenever on stage
- *
- * The README embeds the mascot from `docs/character.svg`. After editing
- * `CHARACTER_SVG`, regenerate that file (its content is `CHARACTER_SVG` plus a
- * trailing newline) — `character.test.ts` fails if the two drift apart.
- */
-
-/** Every part id the CSS choreography depends on. */
-export const CHARACTER_PART_IDS = [
-  'cape',
-  'leg-left',
-  'leg-right',
-  'arm-rest',
-  'arm-wave',
-  'body',
-  'head',
-  'eyes',
-  'plume',
-] as const;
-
-/**
- * Static, trusted markup — no user or calendar data ever flows through here.
- * Draw order (back to front): shadow, cape, legs, sword arm + greatsword,
- * body, waving arm, head (plume drawn behind the helm).
- */
-export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="armorFill" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#dbe3ee" />
@@ -169,15 +124,4 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
     <line x1="69" y1="64" x2="69" y2="73" stroke="#6d788f" stroke-width="2.4" stroke-linecap="round" />
     <line x1="77" y1="63" x2="77" y2="71" stroke="#6d788f" stroke-width="2.4" stroke-linecap="round" />
   </g>
-</svg>`;
-
-/**
- * Inject the character into its host element.
- *
- * `innerHTML` is safe here because `CHARACTER_SVG` is a static compile-time
- * constant — untrusted calendar data is rendered elsewhere via `textContent`
- * only (see `OverlayAnimator.renderBubble`).
- */
-export function mountCharacter(host: HTMLElement): void {
-  host.innerHTML = CHARACTER_SVG;
-}
+</svg>

@@ -120,7 +120,17 @@ class AlertController {
    * out. The label is resynced afterward so the menu always reflects state.
    */
   async toggleAuth(): Promise<void> {
-    if (authToggleAction(await this.calendar.isSignedIn()) === 'signOut') {
+    let action: 'signIn' | 'signOut';
+    try {
+      action = authToggleAction(await this.calendar.isSignedIn());
+    } catch (error) {
+      // A keychain read failure here would otherwise make the tray click a
+      // silent no-op (the rejection is void-ed by the event bridge).
+      console.error('Sign-in state check failed', error);
+      await showError('Google sign-in failed', describeError(error));
+      return;
+    }
+    if (action === 'signOut') {
       await this.signOut();
     } else {
       await this.signIn();
@@ -130,7 +140,14 @@ class AlertController {
 
   /** Push the current sign-in state to the tray menu label and status lines. */
   async syncAuthMenu(): Promise<void> {
-    this.signedIn = await this.calendar.isSignedIn();
+    try {
+      this.signedIn = await this.calendar.isSignedIn();
+    } catch (error) {
+      // An unreadable keychain at startup reads as signed-out; clicking the
+      // tray sign-in item will surface the underlying error in a dialog.
+      console.error('Sign-in state check failed', error);
+      this.signedIn = false;
+    }
     await setAuthMenuLabel(authMenuLabel(this.signedIn));
     this.updateStatus();
   }
@@ -207,14 +224,23 @@ class AlertController {
   /** One poll iteration: fetch if signed in, then schedule the next. */
   private async poll(): Promise<void> {
     if (!this.polling) return;
-    if (!(await this.calendar.isSignedIn())) {
-      this.signedIn = false;
-      this.polling = false; // nothing to poll until sign-in restarts the loop
-      this.updateStatus(); // reflect a token that lapsed out from under us
-      return;
+    try {
+      if (!(await this.calendar.isSignedIn())) {
+        this.signedIn = false;
+        this.polling = false; // nothing to poll until sign-in restarts the loop
+        this.updateStatus(); // reflect a token that lapsed out from under us
+        return;
+      }
+      this.signedIn = true;
+      await this.refresh();
+    } catch (error) {
+      // A transient keychain failure must not kill the loop: an uncaught
+      // rejection here would end polling silently and permanently ("signed in
+      // but never syncs"). Surface it on the tray and try again next cycle.
+      console.error('Calendar poll failed', error);
+      this.lastSync = { ok: false, at: new Date(), detail: describeError(error) };
+      this.updateStatus();
     }
-    this.signedIn = true;
-    await this.refresh();
     if (!this.polling) return; // stopped (e.g. signed out) during the fetch
     this.pollTimer = window.setTimeout(
       () => void this.poll(),
@@ -224,10 +250,17 @@ class AlertController {
 
   /** Manual "Sync now" from the tray: fetch immediately, but only if signed in. */
   async syncNow(): Promise<void> {
-    if (await this.calendar.isSignedIn()) {
-      this.signedIn = true;
-      await this.refresh();
+    try {
+      if (!(await this.calendar.isSignedIn())) return;
+    } catch (error) {
+      // User-initiated, so a dialog is warranted; the void-ing event bridge
+      // would otherwise swallow this and the click would appear to do nothing.
+      console.error('Sign-in state check failed', error);
+      await showError('Sync failed', describeError(error));
+      return;
     }
+    this.signedIn = true;
+    await this.refresh();
   }
 
   /**

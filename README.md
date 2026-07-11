@@ -1,5 +1,7 @@
 # Noticeable Calendar Alert
 
+<img align="right" src="docs/character.svg" alt="The herald knight mascot: a silver-armored knight with a crimson plume and cape, glowing eyes behind an angular visor, one gauntlet resting on the pommel of a greatsword planted at his side, the other raised in a wave." width="140" height="190">
+
 An ultra-lightweight, open-source Windows **system-tray utility** that watches
 your Google Calendar and, right before a meeting starts, summons an aggressive
 **always-on-top** overlay: a valiant vector **knight** — eyes glowing in his
@@ -85,9 +87,16 @@ staged files are auto-formatted, lint-fixed, and the project is type-checked.
 
 ## Connecting Google Calendar
 
-Without credentials the app uses a deterministic `MockCalendarSync`, so
-`npm run dev` works out of the box. To read your real calendar, create a Google
-OAuth **Desktop app** client and point the app at it.
+In the browser (`npm run dev`) the app always uses a deterministic
+`MockCalendarSync`, so it works credential-free out of the box. The **desktop
+app** requires real credentials: without them, **Sign in with Google** shows an
+error dialog with setup instructions instead of pretending to sign in. To read
+your real calendar, create a Google OAuth **Desktop app** client and point the
+app at it.
+
+> **Note:** the `VITE_GOOGLE_*` values are baked in when the frontend is
+> built. If you created or edited `.env` after building, rebuild (or restart
+> `npm run tauri dev`) — a stale build signs in against nothing.
 
 ### 1. Create the OAuth client
 

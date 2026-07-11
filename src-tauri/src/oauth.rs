@@ -112,12 +112,18 @@ fn handle_connection(mut stream: TcpStream) -> Option<OauthRedirect> {
 }
 
 /// Send a tiny HTML page so the browser tab shows a sensible result.
+///
+/// Deliberately worded as "authorization received", not "signed in": at this
+/// point only the redirect has been captured — the token exchange still runs
+/// in the app and can fail, so the browser must not pre-claim success.
 fn write_response(stream: &mut TcpStream, captured: bool) {
     let html = if captured {
         "<!doctype html><meta charset=utf-8>\
         <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
-        <h2>Signed in \u{2713}</h2>\
-        <p>You can close this tab and return to Noticeable Calendar Alert.</p>"
+        <h2>Authorization received \u{2713}</h2>\
+        <p>Return to Noticeable Calendar Alert to finish signing in \u{2014} \
+        you can close this tab. The tray menu shows \u{201c}Sign out\u{201d} \
+        once sign-in completes, or an error dialog if it failed.</p>"
     } else {
         "<!doctype html><meta charset=utf-8>\
         <body style=\"font-family:system-ui;padding:3rem;text-align:center\">\
