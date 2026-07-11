@@ -1,15 +1,12 @@
 # Noticeable Calendar Alert
 
-<img align="right" src="docs/character.svg" alt="The herald knight mascot: a silver-armored knight with a crimson plume and cape, glowing eyes behind an angular visor, one gauntlet resting on the pommel of a greatsword planted at his side, the other raised in a wave." width="140" height="190">
+<img align="right" src="docs/character.svg" alt="The knight mascot, waving, with a greatsword planted at his side" width="140" height="190">
 
 An ultra-lightweight, open-source Windows **system-tray utility** that watches
-your Google Calendar and, right before a meeting starts, summons an aggressive
-**always-on-top** overlay: a valiant vector **knight** — eyes glowing in his
-visor, flowing plume and cape, gauntlet resting on the pommel of a planted
-greatsword — marches in from the right edge of your screen, waves, and pops a
-speech bubble with the meeting title and a **Join Call** button. While the
-bubble is up the knight stands watch beside it, breathing, blinking, plume and
-cape swaying — and in the final minute he starts hopping while the countdown
+your Google Calendar and, right before a meeting starts, summons an
+**always-on-top** overlay: a vector **knight** marches in from the right edge
+of your screen, waves, and pops a speech bubble with the meeting title and a
+**Join Call** button. In the final minute he starts hopping while the countdown
 pulses red, so the alert gets harder to ignore exactly when it should.
 
 Built with **Tauri v2** + **Vanilla TypeScript + Vite** — no React, no UI
