@@ -80,6 +80,13 @@ body {
   transform: translateX(0);
 }
 
+/* The longsword's tip sweeps a few px past the 140px canvas at the peak of
+   the walking arm-swing; let it draw into the .character margin instead of
+   being clipped mid-blade. */
+.character svg {
+  overflow: visible;
+}
+
 /* Every articulated part rotates/scales around its own geometry, not the
    whole SVG canvas. */
 .character #cape,

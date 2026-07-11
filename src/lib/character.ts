@@ -10,7 +10,8 @@
  *
  * Animatable parts (each id is a CSS animation hook — see styles.css):
  *   #leg-left / #leg-right — alternate stepping while walking
- *   #arm-rest             — the tucked arm; swings counter to the legs
+ *   #arm-rest             — the sword arm, blade point-down at the side;
+ *                           swings counter to the legs while walking
  *   #arm-wave             — the greeting arm; tucked down while walking,
  *                           raised + waved on arrival, lowered while presenting
  *   #body                 — breathes gently while presenting
@@ -58,6 +59,11 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
       <stop offset="0" stop-color="#f0c463" />
       <stop offset="1" stop-color="#c9952f" />
     </linearGradient>
+    <linearGradient id="bladeFill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#eef2f8" />
+      <stop offset="0.5" stop-color="#c3cddd" />
+      <stop offset="1" stop-color="#93a0b6" />
+    </linearGradient>
   </defs>
 
   <!-- Ground shadow -->
@@ -84,11 +90,23 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
     <ellipse cx="76" cy="175.5" rx="7" ry="3.4" fill="#727e96" />
   </g>
 
-  <!-- Resting arm (tucked behind the body), with a gold vambrace band -->
+  <!-- Sword arm, gold vambrace band. The scimitar is held ALOFT: a long
+       curved blade (cutting edge outward, flared toward the tip) rises from
+       the fist past the forearm. Drawn before the fist so the gauntlet grips
+       it just under the gold guard; the gem pommel peeks below the fist. -->
   <g id="arm-rest">
     <rect x="29" y="92" width="14" height="46" rx="7" fill="#97a2b8" />
     <rect x="29" y="118" width="14" height="9" rx="4.5" fill="url(#goldFill)" />
+    <g transform="rotate(-4 36 140)">
+      <path d="M32 126 C29 105 24 86 13 62 L12 51 C24 61 33 90 40 126 Z" fill="url(#bladeFill)" />
+      <path d="M30 116 C26 97 22 83 16 65" stroke="#ffffff" stroke-width="1" fill="none" opacity="0.6" />
+      <path d="M26 128 Q36 123.5 46 128 Q36 132.5 26 128 Z" fill="url(#goldFill)" />
+      <rect x="33.2" y="130" width="5.6" height="15" rx="2.4" fill="#6b3f22" />
+      <circle cx="36" cy="151.5" r="4.5" fill="url(#goldFill)" />
+      <circle cx="36" cy="151.5" r="2.2" fill="#b23a48" />
+    </g>
     <circle cx="36" cy="140" r="8.5" fill="#6d788f" />
+    <circle cx="36" cy="140" r="8.5" fill="none" stroke="#5d6880" stroke-width="1.5" />
   </g>
 
   <!-- Body: cuirass, faulds, gold belt + buckle, crest shield, pauldrons -->
