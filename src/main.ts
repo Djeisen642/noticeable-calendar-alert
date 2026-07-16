@@ -8,7 +8,7 @@
  */
 
 import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
-import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
+import { selectNextEvent, type CalendarEvent, type CalendarSync } from './lib/calendar.ts';
 import { mountCharacter } from './lib/character.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, describeCountdown, type CountdownDelta } from './lib/countdown.ts';
@@ -300,7 +300,7 @@ class AlertController {
     this.refreshing = true;
     try {
       const events = await this.calendar.getUpcomingEvents(FETCH_HORIZON_MINUTES * MS_PER_MINUTE);
-      this.next = events.at(0) ?? null;
+      this.next = selectNextEvent(events, new Date());
       this.lastSync = { ok: true, at: new Date() };
     } catch (error) {
       console.error('Calendar refresh failed', error);
