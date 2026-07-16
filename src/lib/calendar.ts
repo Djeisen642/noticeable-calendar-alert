@@ -45,6 +45,28 @@ export interface CalendarSync {
 }
 
 /**
+ * Pick the soonest event that hasn't started yet, regardless of the input's
+ * order.
+ *
+ * Google's `events.list` filters by `timeMin` against an event's *end* time,
+ * not its start — so a meeting already in progress still comes back first in
+ * a `startTime`-sorted list until it actually ends. Left unfiltered, `next`
+ * would stay pinned to that in-progress meeting for its entire duration,
+ * missing the alert lead time for whatever starts immediately after it (i.e.
+ * back-to-back meetings never get their own overlay).
+ */
+export function selectNextEvent(events: readonly CalendarEvent[], now: Date): CalendarEvent | null {
+  let soonest: CalendarEvent | null = null;
+  for (const event of events) {
+    if (event.start.getTime() <= now.getTime()) continue;
+    if (soonest === null || event.start.getTime() < soonest.start.getTime()) {
+      soonest = event;
+    }
+  }
+  return soonest;
+}
+
+/**
  * Deterministic in-memory implementation used in development and tests.
  *
  * It synthesizes a single meeting a fixed number of seconds in the future so

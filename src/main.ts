@@ -8,11 +8,11 @@
  */
 
 import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
-import type { CalendarEvent, CalendarSync } from './lib/calendar.ts';
+import { selectNextEvent, type CalendarEvent, type CalendarSync } from './lib/calendar.ts';
 import { mountCharacter } from './lib/character.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, describeCountdown, type CountdownDelta } from './lib/countdown.ts';
-import { shouldPresent } from './lib/alert.ts';
+import { shouldPresent, isActiveEventStale } from './lib/alert.ts';
 import { demoBubbleContent } from './lib/demo.ts';
 import { nextFetchDelayMs } from './lib/poll.ts';
 import { authMenuLabel, authToggleAction, formatTrayStatus, type SyncState } from './lib/tray.ts';
@@ -300,7 +300,7 @@ class AlertController {
     this.refreshing = true;
     try {
       const events = await this.calendar.getUpcomingEvents(FETCH_HORIZON_MINUTES * MS_PER_MINUTE);
-      this.next = events.at(0) ?? null;
+      this.next = selectNextEvent(events, new Date());
       this.lastSync = { ok: true, at: new Date() };
     } catch (error) {
       console.error('Calendar refresh failed', error);
@@ -321,6 +321,14 @@ class AlertController {
     return this.runExclusive(async () => {
       const next = this.next;
       const now = new Date();
+
+      // A poll can advance `next` past the event currently on screen (e.g. a
+      // back-to-back meeting whose predecessor hasn't been dismissed yet).
+      // Dismiss it properly before considering what's next, rather than
+      // presenting straight over it.
+      if (isActiveEventStale(this.activeEventId, next?.id ?? null)) {
+        await this.dismiss();
+      }
 
       if (next === null) {
         if (this.activeEventId !== null) await this.dismiss();
