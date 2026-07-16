@@ -14,6 +14,24 @@ export interface AlertState {
 }
 
 /**
+ * Whether the overlay's currently active event is stale and must be
+ * dismissed before anything else happens.
+ *
+ * `tick()` and the calendar poll aren't mutually exclusive, so a poll can
+ * advance `next` to a different event while the previous one is still on
+ * screen (e.g. a back-to-back meeting whose predecessor hasn't been
+ * dismissed yet). Presenting the new event straight over the old one would
+ * skip its exit animation and its `dismissedEventId` bookkeeping, so that
+ * case must run through `dismiss()` first.
+ */
+export function isActiveEventStale(
+  activeEventId: string | null,
+  nextEventId: string | null,
+): boolean {
+  return activeEventId !== null && activeEventId !== nextEventId;
+}
+
+/**
  * Whether `event` should be freshly presented now.
  *
  * Crucially, an event the user already dismissed is NOT re-presented while it

@@ -45,7 +45,8 @@ export interface CalendarSync {
 }
 
 /**
- * Pick the soonest event that hasn't started yet.
+ * Pick the soonest event that hasn't started yet, regardless of the input's
+ * order.
  *
  * Google's `events.list` filters by `timeMin` against an event's *end* time,
  * not its start — so a meeting already in progress still comes back first in
@@ -55,7 +56,14 @@ export interface CalendarSync {
  * back-to-back meetings never get their own overlay).
  */
 export function selectNextEvent(events: readonly CalendarEvent[], now: Date): CalendarEvent | null {
-  return events.find((event) => event.start.getTime() > now.getTime()) ?? null;
+  let soonest: CalendarEvent | null = null;
+  for (const event of events) {
+    if (event.start.getTime() <= now.getTime()) continue;
+    if (soonest === null || event.start.getTime() < soonest.start.getTime()) {
+      soonest = event;
+    }
+  }
+  return soonest;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shouldPresent, type AlertState } from './alert.ts';
+import { shouldPresent, isActiveEventStale, type AlertState } from './alert.ts';
 import type { CalendarEvent } from './calendar.ts';
 
 const NOW = new Date('2026-06-26T09:00:00.000Z');
@@ -47,5 +47,24 @@ describe('shouldPresent', () => {
     expect(
       shouldPresent(event('b', 4), NOW, 5, { activeEventId: null, dismissedEventId: 'a' }),
     ).toBe(true);
+  });
+});
+
+describe('isActiveEventStale', () => {
+  it('is not stale when nothing is active', () => {
+    expect(isActiveEventStale(null, 'b')).toBe(false);
+    expect(isActiveEventStale(null, null)).toBe(false);
+  });
+
+  it('is not stale when the active event is still next', () => {
+    expect(isActiveEventStale('a', 'a')).toBe(false);
+  });
+
+  it('is stale when a poll advanced next to a different event (back-to-back)', () => {
+    expect(isActiveEventStale('a', 'b')).toBe(true);
+  });
+
+  it('is stale when next has gone null while an event is still on screen', () => {
+    expect(isActiveEventStale('a', null)).toBe(true);
   });
 });

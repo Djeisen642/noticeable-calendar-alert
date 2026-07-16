@@ -40,6 +40,24 @@ describe('selectNextEvent', () => {
     expect(selectNextEvent([inProgress, backToBack], now)?.id).toBe('back-to-back');
   });
 
+  it('picks the true soonest event even when the input is not sorted', () => {
+    // Nothing in the CalendarSync contract enforces call-site ordering at the
+    // type level, so selectNextEvent must not just take the first match.
+    const now = new Date('2026-06-26T09:00:00.000Z');
+    const farther = makeEvent(
+      'farther',
+      new Date('2026-06-26T12:00:00.000Z'),
+      new Date('2026-06-26T12:30:00.000Z'),
+    );
+    const soonest = makeEvent(
+      'soonest',
+      new Date('2026-06-26T10:00:00.000Z'),
+      new Date('2026-06-26T10:30:00.000Z'),
+    );
+
+    expect(selectNextEvent([farther, soonest], now)?.id).toBe('soonest');
+  });
+
   it('returns null when every event has already started', () => {
     const now = new Date('2026-06-26T09:30:00.000Z');
     const past = makeEvent(
