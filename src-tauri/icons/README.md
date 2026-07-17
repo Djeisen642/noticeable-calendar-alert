@@ -1,25 +1,43 @@
 # App icons
 
 This folder holds the icon set referenced by `tauri.conf.json`
-(`bundle.icon`) and the tray (`app.trayIcon.iconPath`).
+(`bundle.icon`); the tray reuses the embedded window icon at runtime.
 
-## Committed placeholders
+## The design
 
-`32x32.png`, `128x128.png`, `128x128@2x.png`, and `icon.png` are committed
-**placeholder** icons (a flat blue tile) so the project compiles and runs in
-development without an extra setup step — `generate_context!` embeds the window
-icon at build time and fails if it is missing.
+A herald's trumpet with a crimson swallowtail banner carrying a calendar
+glyph — the app's "announce the meeting" concept, drawn in the same
+gold / crimson / steel-on-navy palette as the in-app characters but
+deliberately **character-neutral** so the mascot roster can grow without
+dating the icon.
 
-## Before a real release
+## Source of truth
 
-Replace the placeholders and regenerate the full platform set from a single
-1024×1024 source PNG:
+`icon.svg` is the master. The committed PNGs are rendered from it:
+
+| File             | Size      | Used for                               |
+| ---------------- | --------- | -------------------------------------- |
+| `32x32.png`      | 32×32     | Windows window/tray icon               |
+| `128x128.png`    | 128×128   | Linux window icon                      |
+| `128x128@2x.png` | 256×256   | HiDPI                                  |
+| `icon.png`       | 1024×1024 | Default icon + source for `tauri icon` |
+
+To regenerate after editing `icon.svg`, rasterize it at 32/128/256/1024
+(e.g. with `@resvg/resvg-js`, `rsvg-convert`, or Inkscape) and overwrite the
+PNGs above. Note when rasterizing: headless-Chromium screenshots silently
+come out blank below ~200px windows, and a pure-vertical line has a
+zero-width bounding box which disables `objectBoundingBox` gradient strokes —
+`icon.svg` uses solid fills where that matters.
+
+## Before a release
+
+Generate the remaining platform formats from the 1024×1024 `icon.png`:
 
 ```bash
-npm run tauri icon path/to/source-icon.png
+npm run tauri icon src-tauri/icons/icon.png
 ```
 
-That produces `icon.ico` (Windows) and `icon.icns` (macOS) in addition to the
-PNGs. **Add `icons/icon.ico` and `icons/icon.icns` back into the `bundle.icon`
-array** in `tauri.conf.json` before building Windows/macOS installers — they are
-omitted from the committed config because valid binaries aren't checked in.
+That produces `icon.ico` (Windows) and `icon.icns` (macOS). **Add
+`icons/icon.ico` and `icons/icon.icns` back into the `bundle.icon` array**
+in `tauri.conf.json` before building Windows/macOS installers — they are
+omitted from the committed config because those binaries aren't checked in.

@@ -75,7 +75,7 @@ src-tauri/
   src/main.rs          # Binary entry point
   tauri.conf.json      # Transparent, alwaysOnTop, skipTaskbar, hidden-until-needed window
   capabilities/        # Least-privilege permission set (only what JS invokes)
-  icons/               # Placeholder PNGs (see icons/README.md)
+  icons/               # App icon: icon.svg master + rendered PNGs (see icons/README.md)
 ```
 
 ### Key design decisions (don't regress these)
@@ -171,7 +171,8 @@ reviewed-but-unrun, and list what the user must check on-device.
 
 - Verify the Google OAuth native path on a real machine (logic is tested; the
   loopback/keychain/http-plugin adapters are reviewed-but-unrun).
-- Commit a real icon set / `Cargo.lock`; add `icon.ico`/`icon.icns` back to
+- Commit a `Cargo.lock`; generate `icon.ico`/`icon.icns` from the committed
+  icon set (`npm run tauri icon src-tauri/icons/icon.png`) and add them back to
   `bundle.icon` for release bundling.
 - Multi-monitor-aware overlay positioning (account for monitor origin + taskbar).
 - Optional: coverage thresholds; `cargo clippy`/`cargo fmt` gates once a Rust
