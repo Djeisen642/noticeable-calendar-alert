@@ -13,16 +13,21 @@ dating the icon.
 
 ## Source of truth
 
-`icon.svg` is the master. The committed PNGs are rendered from it:
+Two SVG masters, same composition at two detail levels:
 
-| File             | Size      | Used for                               |
-| ---------------- | --------- | -------------------------------------- |
-| `32x32.png`      | 32×32     | Windows window/tray icon               |
-| `128x128.png`    | 128×128   | Linux window icon                      |
-| `128x128@2x.png` | 256×256   | HiDPI                                  |
-| `icon.png`       | 1024×1024 | Default icon + source for `tauri icon` |
+- `icon.svg` — the full-detail art (fanfare arcs, sparkle, cords, day grid).
+- `icon-small.svg` — hand-tuned for ≤32px: detail dropped, shapes fattened,
+  a single bold alert date instead of the grid. Keep it in sync with
+  `icon.svg` when the design changes — it is the same icon, simplified.
 
-To regenerate after editing `icon.svg`, rasterize it at 32/128/256/1024
+| File             | Size      | Rendered from    | Used for                               |
+| ---------------- | --------- | ---------------- | -------------------------------------- |
+| `32x32.png`      | 32×32     | `icon-small.svg` | Windows window/tray icon               |
+| `128x128.png`    | 128×128   | `icon.svg`       | Linux window icon                      |
+| `128x128@2x.png` | 256×256   | `icon.svg`       | HiDPI                                  |
+| `icon.png`       | 1024×1024 | `icon.svg`       | Default icon + source for `tauri icon` |
+
+To regenerate after editing the SVGs, rasterize each master at its sizes
 (e.g. with `@resvg/resvg-js`, `rsvg-convert`, or Inkscape) and overwrite the
 PNGs above. Note when rasterizing: headless-Chromium screenshots silently
 come out blank below ~200px windows, and a pure-vertical line has a
@@ -41,3 +46,10 @@ That produces `icon.ico` (Windows) and `icon.icns` (macOS). **Add
 `icons/icon.ico` and `icons/icon.icns` back into the `bundle.icon` array**
 in `tauri.conf.json` before building Windows/macOS installers — they are
 omitted from the committed config because those binaries aren't checked in.
+
+Note that `tauri icon` derives every `.ico` sub-size from the one detailed
+source, so the small entries inside it won't get the hand-tuned art. For a
+polished release `.ico`, assemble it from per-size PNGs instead (16/32 from
+`icon-small.svg`, larger from `icon.svg`) with an ico packer such as
+ImageMagick (`magick convert 16.png 32.png 48.png 256.png icon.ico`) or the
+`png-to-ico` npm package.
