@@ -9,7 +9,8 @@
 
 import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
 import { selectNextEvent, type CalendarEvent, type CalendarSync } from './lib/calendar.ts';
-import { CharacterRotation, mountCharacter } from './lib/character.ts';
+import { mountCharacter } from './lib/characters/character.ts';
+import { createCharacterRotation, type CharacterRotation } from './lib/characters/roster.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, describeCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent, isActiveEventStale } from './lib/alert.ts';
@@ -415,8 +416,8 @@ class AlertController {
 function bootstrap(): void {
   const elements = resolveElements();
   // Mount whoever is first in the rotation so the stage is never empty; each
-  // alert then advances the cast (lib/character.ts owns the roster).
-  const rotation = new CharacterRotation();
+  // alert then advances the cast (lib/characters/roster.ts owns the roster).
+  const rotation = createCharacterRotation();
   mountCharacter(elements.character, rotation.current);
   const animator = new OverlayAnimator(elements);
   // Real GoogleCalendarSync when configured + in the desktop app; mock otherwise.

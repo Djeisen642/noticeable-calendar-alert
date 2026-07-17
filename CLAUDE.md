@@ -57,7 +57,12 @@ src/
     countdown.ts(.test) # Pure meeting-countdown math + countdownUrgency()
     poll.ts(.test)      # nextFetchDelayMs(): adaptive calendar-poll cadence
     calendar.ts(.test)  # CalendarSync interface + deterministic MockCalendarSync
-    character.ts(.test) # The mascot cast (knight + dragon) + rotation; part-id source of truth
+    characters/          # The mascot cast — one module per concern
+      character.ts        # Character interface + core part-id contract + mountCharacter
+      knight.ts           # The herald knight
+      dragon.ts           # The crimson dragon (wings, tail, fire breath)
+      roster.ts(.test)    # CHARACTERS + CharacterRotation + factory
+      characters.test.ts  # Per-character id/docs/styles.css guards
     animation.ts        # OverlayAnimator (idle → walking → waving → presenting)
     url.ts(.test)       # safeExternalUrl(): http(s)-only guard for untrusted links
     tauri.ts            # Optional native bridge; degrades gracefully in a browser

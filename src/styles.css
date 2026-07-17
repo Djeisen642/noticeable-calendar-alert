@@ -22,7 +22,7 @@
  * The cast rotates per alert; character-specific rules are scoped via
  * [data-character] where shared ids need different pivots. Ids unique to one
  * character (#cape, #wing-left, …) are simply inert for the others. The
- * animatable SVG part ids (#leg-left, #arm-wave, …) live in lib/character.ts.
+ * animatable SVG part ids (#leg-left, #arm-wave, …) live in lib/characters/.
  */
 
 :root {
@@ -105,9 +105,6 @@ body {
 .character #head,
 .character #eyes,
 .character #plume,
-.character #wing-left,
-.character #wing-right,
-.character #tail,
 .character #fire-inner,
 .character #smoke {
   transform-box: fill-box;
@@ -116,7 +113,7 @@ body {
 /* The knight's sword arm pivots at the shoulder, pinned in viewBox
    coordinates: the planted greatsword stretches the group's bounding box, so
    a fill-box percentage origin would land on the blade instead of the joint.
-   Keep in sync with the shoulder position in lib/character.ts. */
+   Keep in sync with the shoulder position in lib/characters/knight.ts. */
 .character[data-character='knight'] #arm-rest {
   transform-box: view-box;
   transform-origin: 36px 97px;
@@ -153,35 +150,42 @@ body {
   transform-origin: 50% 80%; /* the neck */
 }
 
-/* Dragon pivots. The wings hinge where the bone meets the shoulder; the tail
-   swings from where it leaves the body. */
+/* Dragon pivots, pinned in viewBox coordinates (the wing groups' bounding
+   boxes are dominated by the membranes, so percentage origins would drift as
+   the art changes). The wings hinge where the bone meets the shoulder; the
+   tail swings from where it leaves the body. Keep in sync with the joints in
+   lib/characters/dragon.ts. */
 .character #wing-left {
-  transform-origin: 92% 12%;
+  transform-box: view-box;
+  transform-origin: 46px 90px;
 }
 
 .character #wing-right {
-  transform-origin: 8% 12%;
+  transform-box: view-box;
+  transform-origin: 92px 90px;
 }
 
 .character #tail {
-  transform-origin: 6% 45%;
+  transform-box: view-box;
+  transform-origin: 90px 150px;
 }
 
 /* The dragon's head bounding box is stretched by the (hidden) flame and the
    horns, so its sway pivot is pinned to the neck in viewBox coordinates.
-   Keep in sync with the skull position in lib/character.ts. */
+   Keep in sync with the skull position in lib/characters/dragon.ts. */
 .character[data-character='dragon'] #head {
   transform-box: view-box;
-  transform-origin: 72px 76px;
+  transform-origin: 76px 76px;
 }
 
 /* The fire scales/rotates around the mouth, pinned in viewBox coordinates
    (its own bounding box is the flame, whose corner isn't the mouth). Hidden
    until a breath animation runs — and under prefers-reduced-motion it simply
-   stays hidden. Keep the origin in sync with the mouth in lib/character.ts. */
+   stays hidden. Keep the origin in sync with the mouth in
+   lib/characters/dragon.ts. */
 .character #fire {
   transform-box: view-box;
-  transform-origin: 29px 61px;
+  transform-origin: 22px 64px;
   opacity: 0;
 }
 

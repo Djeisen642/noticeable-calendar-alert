@@ -1,7 +1,7 @@
 # Noticeable Calendar Alert
 
 <img align="right" src="docs/knight.svg" alt="The knight mascot, waving, with a greatsword planted at his side" width="140" height="190">
-<img align="right" src="docs/dragon.svg" alt="The dragon mascot, waving, with folded wings and a spade-tipped tail" width="140" height="190">
+<img align="right" src="docs/dragon.svg" alt="The crimson dragon mascot, glowering under swept-back horns, with tattered wings and a barbed tail" width="140" height="190">
 
 An ultra-lightweight, open-source Windows **system-tray utility** that watches
 your Google Calendar and, right before a meeting starts, summons an
@@ -38,7 +38,7 @@ src/
     countdown.ts       # Pure meeting-countdown math + urgency levels (unit-tested)
     countdown.test.ts  # Vitest specs for the delta calculations
     calendar.ts        # Google Calendar sync interface + deterministic mock
-    character.ts       # The mascot cast (knight, dragon) — named animatable parts
+    characters/        # The mascot cast — contract, knight, dragon, rotation
     animation.ts       # OverlayAnimator (walk → wave → bubble → presenting)
     tauri.ts           # Optional bridge to the Tauri runtime (degrades in browser)
 src-tauri/

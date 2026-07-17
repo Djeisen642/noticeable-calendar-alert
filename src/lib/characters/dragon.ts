@@ -1,4 +1,38 @@
-<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
+/**
+ * The dragon — a crimson, sharp-angled fire-breather. Deliberately menacing,
+ * not cute: shape language leans on triangles everywhere (swept-back horns,
+ * jagged wing tears, side spikes, fangs), a heavy brow ridge over narrow
+ * ember-glow eyes, a wedge-shaped muzzle with visible teeth, and an armored
+ * chest whose plate seams glow like a molten core.
+ *
+ * Dragon-specific animatable parts (beyond the core contract in character.ts):
+ *   #wing-left / #wing-right — flap on stage, pump with the stride
+ *   #tail                    — sways on stage, streams while walking
+ *   #fire + #fire-inner      — the breath: a blast while greeting, periodic
+ *                              puffs while presenting; hidden at rest
+ *   #smoke                   — nostril smoke chasing each presenting puff
+ *
+ * NOTE: styles.css pins several dragon pivots in view-box px (wings' shoulder
+ * hinges, the tail root, the head's neck, the fire's mouth). If you move those
+ * joints here, update the matching transform-origins in styles.css.
+ *
+ * The README embeds this character from `docs/dragon.svg`. After editing the
+ * SVG, regenerate that file (its content is `DRAGON.svg` plus a trailing
+ * newline) — `characters.test.ts` fails if the two drift apart.
+ */
+
+import { CORE_PART_IDS, type Character } from './character.ts';
+
+/**
+ * Draw order (back to front): shadow, tail, wings, legs, resting arm, body
+ * (plates + side spikes), waving arm, head (horns, brow, muzzle, eyes — with
+ * the fire breath and nostril smoke anchored at the mouth, on top).
+ *
+ * The fire is drawn pointing LEFT from the mouth inside a wrapper rotated 38°
+ * clockwise, so it breathes up-and-away from the speech bubble; it is hidden
+ * (opacity 0) until the waving blast / presenting puffs animate it.
+ */
+const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="scaleFill" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#d84f41" />
@@ -156,4 +190,10 @@
       </g>
     </g>
   </g>
-</svg>
+</svg>`;
+
+export const DRAGON: Character = {
+  id: 'dragon',
+  partIds: [...CORE_PART_IDS, 'wing-left', 'wing-right', 'tail', 'fire', 'fire-inner', 'smoke'],
+  svg: DRAGON_SVG,
+};

@@ -1,13 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import {
-  CHARACTERS,
-  CharacterRotation,
-  CORE_PART_IDS,
-  DRAGON,
-  KNIGHT,
-  mountCharacter,
-} from './character.ts';
+import { CORE_PART_IDS, mountCharacter } from './character.ts';
+import { DRAGON } from './dragon.ts';
+import { CHARACTERS } from './roster.ts';
 
 describe.each(CHARACTERS.map((character) => [character.id, character] as const))(
   'character %s',
@@ -47,7 +42,7 @@ describe.each(CHARACTERS.map((character) => [character.id, character] as const))
       // drifting from the real character: after editing a character's svg,
       // regenerate the file (write character.svg + '\n' to docs/<id>.svg).
       const asset = readFileSync(
-        new URL(`../../docs/${character.id}.svg`, import.meta.url),
+        new URL(`../../../docs/${character.id}.svg`, import.meta.url),
         'utf8',
       );
       expect(asset).toBe(`${character.svg}\n`);
@@ -61,34 +56,11 @@ describe('styles.css part-id selectors', () => {
     // renamed/removed part would silently do nothing. Id selectors appear as
     // `#leg-left,` / `#cape {`; hex colors never match (a letter run in a hex
     // color is always followed by a hex digit or punctuation, not `\s,{`).
-    const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles.css', import.meta.url), 'utf8');
     const declared = new Set<string>(CHARACTERS.flatMap((character) => character.partIds));
     for (const [, id] of css.matchAll(/#([a-z][a-z-]*)(?=[\s,{])/g)) {
       expect(declared.has(id), `styles.css targets #${id}, declared by no character`).toBe(true);
     }
-  });
-});
-
-describe('CharacterRotation', () => {
-  it('cycles through the cast in order and wraps around', () => {
-    const rotation = new CharacterRotation();
-    expect(rotation.current).toBe(KNIGHT);
-    expect(rotation.advance()).toBe(KNIGHT); // first alert: still the knight
-    expect(rotation.current).toBe(DRAGON); // …but the dragon is now on deck
-    expect(rotation.advance()).toBe(DRAGON);
-    expect(rotation.advance()).toBe(KNIGHT); // wrapped
-  });
-
-  it('advance returns the character that current promised', () => {
-    // bootstrap() mounts `current` at startup; the first present() must bring
-    // that same character (not skip ahead), or the stage would flicker-swap.
-    const rotation = new CharacterRotation([DRAGON, KNIGHT]);
-    const promised = rotation.current;
-    expect(rotation.advance()).toBe(promised);
-  });
-
-  it('rejects an empty roster', () => {
-    expect(() => new CharacterRotation([])).toThrow();
   });
 });
 
