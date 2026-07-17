@@ -157,12 +157,12 @@ body {
    lib/characters/dragon.ts. */
 .character #wing-left {
   transform-box: view-box;
-  transform-origin: 46px 90px;
+  transform-origin: 52px 90px;
 }
 
 .character #wing-right {
   transform-box: view-box;
-  transform-origin: 92px 90px;
+  transform-origin: 86px 90px;
 }
 
 .character #tail {
@@ -170,12 +170,12 @@ body {
   transform-origin: 90px 150px;
 }
 
-/* The dragon's head bounding box is stretched by the (hidden) flame and the
-   horns, so its sway pivot is pinned to the neck in viewBox coordinates.
-   Keep in sync with the skull position in lib/characters/dragon.ts. */
+/* The dragon's whole neck lives in the head group: the sway pivot sits at
+   the neck ROOT (viewBox px) so the presenting head-sway serpentines the
+   neck. Keep in sync with the neck base in lib/characters/dragon.ts. */
 .character[data-character='dragon'] #head {
   transform-box: view-box;
-  transform-origin: 76px 76px;
+  transform-origin: 74px 98px;
 }
 
 /* The fire scales/rotates around the mouth, pinned in viewBox coordinates
@@ -185,7 +185,7 @@ body {
    lib/characters/dragon.ts. */
 .character #fire {
   transform-box: view-box;
-  transform-origin: 22px 64px;
+  transform-origin: 24px 41px;
   opacity: 0;
 }
 
@@ -544,24 +544,24 @@ body {
 @keyframes fire-puff {
   0%,
   63% {
-    transform: scale(0.15) rotate(-14deg);
+    transform: scale(0.15) rotate(-24deg);
     opacity: 0;
   }
   68% {
-    transform: scale(0.42) rotate(-16deg);
+    transform: scale(0.42) rotate(-26deg);
     opacity: 1;
   }
   74% {
-    transform: scale(0.52) rotate(-12deg);
+    transform: scale(0.52) rotate(-22deg);
     opacity: 1;
   }
   80% {
-    transform: scale(0.4) rotate(-16deg);
+    transform: scale(0.4) rotate(-26deg);
     opacity: 0.9;
   }
   86%,
   100% {
-    transform: scale(0.15) rotate(-14deg);
+    transform: scale(0.15) rotate(-24deg);
     opacity: 0;
   }
 }
