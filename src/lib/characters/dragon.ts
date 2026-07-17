@@ -52,8 +52,12 @@ const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="h
       <stop offset="1" stop-color="#8a1f1d" />
     </linearGradient>
     <linearGradient id="wingFill" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6e1a22" />
-      <stop offset="1" stop-color="#3a0f16" />
+      <stop offset="0" stop-color="#8a2420" />
+      <stop offset="1" stop-color="#4a1216" />
+    </linearGradient>
+    <linearGradient id="dragonGoldFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2b45c" />
+      <stop offset="1" stop-color="#a87428" />
     </linearGradient>
     <linearGradient id="hornFill" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#5c2a2e" />
@@ -68,34 +72,36 @@ const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="h
   <!-- Ground shadow -->
   <ellipse cx="68" cy="183" rx="34" ry="6" fill="#000000" opacity="0.16" />
 
-  <!-- Tail: curls out to the right, ridged with spikes, tipped with a barb -->
+  <!-- Tail: a long sweep ending in the classic spiral curl, ridged with
+       spikes and tapering to a point -->
   <g id="tail">
-    <path d="M90 150 Q118 164 126 146" stroke="url(#scaleFill)" stroke-width="14" stroke-linecap="round" fill="none" />
-    <path d="M124 150 Q129 140 127 128" stroke="#a8302b" stroke-width="8" stroke-linecap="round" fill="none" />
-    <path d="M104 150 L108 140 L113 151 Z" fill="url(#hornFill)" />
-    <path d="M118 155 L124 147 L127 158 Z" fill="url(#hornFill)" />
-    <path d="M127 104 L139 124 L127 118 L115 124 Z" fill="url(#hornFill)" />
+    <path d="M88 148 Q116 162 128 148" stroke="url(#scaleFill)" stroke-width="13" stroke-linecap="round" fill="none" />
+    <path d="M128 148 Q136 136 128 128 Q118 122 114 132 Q112 140 120 142" stroke="#a8302b" stroke-width="7" stroke-linecap="round" fill="none" />
+    <path d="M120 142 Q126 143 127 138" stroke="#8a1f1d" stroke-width="4" stroke-linecap="round" fill="none" />
+    <path d="M127 140 L133 132 L129 141 Z" fill="url(#hornFill)" />
+    <path d="M100 148 L104 138 L109 149 Z" fill="url(#hornFill)" />
+    <path d="M114 153 L120 145 L123 156 Z" fill="url(#hornFill)" />
   </g>
 
-  <!-- Wings: tall bat wings raised behind the shoulders, torn along the
-       trailing edge, ember-lit ribs -->
+  <!-- Wings: raised bat wings with scalloped trailing edges; finger bones
+       radiate from the wrist to each scallop point -->
   <g id="wing-left">
-    <path d="M52 90 Q30 60 16 36 L8 84 L18 74 L20 92 L30 80 L33 100 L42 90 L45 106 L52 98 Z" fill="url(#wingFill)" />
-    <path d="M16 36 L10 80" stroke="#ff6b2e" stroke-width="1.5" fill="none" opacity="0.35" />
-    <path d="M18 39 L21 88" stroke="#ff6b2e" stroke-width="1.5" fill="none" opacity="0.35" />
-    <path d="M22 44 L32 96" stroke="#ff6b2e" stroke-width="1.5" fill="none" opacity="0.35" />
-    <path d="M27 51 L44 102" stroke="#ff6b2e" stroke-width="1.5" fill="none" opacity="0.35" />
+    <path d="M52 90 Q30 60 16 36 Q10 54 6 72 Q13 66 16 84 Q23 76 26 96 Q33 88 36 106 Q42 98 52 98 Z" fill="url(#wingFill)" />
+    <path d="M22 48 L6 72" stroke="#4a1216" stroke-width="2.2" fill="none" />
+    <path d="M22 48 L16 84" stroke="#4a1216" stroke-width="2.2" fill="none" />
+    <path d="M22 48 L26 96" stroke="#4a1216" stroke-width="2.2" fill="none" />
+    <path d="M22 48 L36 106" stroke="#4a1216" stroke-width="2.2" fill="none" />
     <path d="M52 90 Q30 60 16 36" stroke="#33121a" stroke-width="6" stroke-linecap="round" fill="none" />
-    <path d="M16 36 L8 26 L18 32 Z" fill="url(#hornFill)" />
+    <path d="M16 36 L8 26 L18 32 Z" fill="url(#clawFill)" />
   </g>
   <g id="wing-right">
-    <path d="M86 90 Q108 58 130 34 L138 82 L128 72 L126 90 L116 78 L113 98 L104 88 L101 104 L94 96 Z" fill="url(#wingFill)" />
-    <path d="M130 34 L136 78" stroke="#ff6b2e" stroke-width="1.5" fill="none" opacity="0.35" />
-    <path d="M128 37 L125 86" stroke="#ff6b2e" stroke-width="1.5" fill="none" opacity="0.35" />
-    <path d="M124 42 L114 94" stroke="#ff6b2e" stroke-width="1.5" fill="none" opacity="0.35" />
-    <path d="M119 49 L102 100" stroke="#ff6b2e" stroke-width="1.5" fill="none" opacity="0.35" />
+    <path d="M86 90 Q108 58 130 34 Q136 52 139 70 Q131 64 128 84 Q120 76 116 98 Q108 90 104 108 Q97 100 92 100 Z" fill="url(#wingFill)" />
+    <path d="M122 46 L139 70" stroke="#4a1216" stroke-width="2.2" fill="none" />
+    <path d="M122 46 L128 84" stroke="#4a1216" stroke-width="2.2" fill="none" />
+    <path d="M122 46 L116 98" stroke="#4a1216" stroke-width="2.2" fill="none" />
+    <path d="M122 46 L104 108" stroke="#4a1216" stroke-width="2.2" fill="none" />
     <path d="M86 90 Q108 58 130 34" stroke="#33121a" stroke-width="6" stroke-linecap="round" fill="none" />
-    <path d="M130 34 L138 24 L128 30 Z" fill="url(#hornFill)" />
+    <path d="M130 34 L138 24 L128 30 Z" fill="url(#clawFill)" />
   </g>
 
   <!-- Legs: heavy haunches + three long bone claws each -->
@@ -132,14 +138,11 @@ const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="h
     <path d="M96 106 L108 112 L96 120 Z" fill="url(#hornFill)" />
     <path d="M98 122 L109 128 L98 135 Z" fill="url(#hornFill)" />
     <path d="M96 138 L106 143 L96 149 Z" fill="url(#hornFill)" />
-    <rect x="54" y="100" width="30" height="12" rx="4" fill="#5c242b" />
-    <rect x="52" y="113" width="34" height="12" rx="4" fill="#552128" />
-    <rect x="54" y="126" width="30" height="12" rx="4" fill="#4e1e25" />
-    <rect x="57" y="139" width="26" height="11" rx="4" fill="#471b22" />
-    <path d="M56 112.5 L82 112.5" stroke="#ff6b2e" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7" />
-    <path d="M54 125.5 L84 125.5" stroke="#ff6b2e" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7" />
-    <path d="M56 138.2 L82 138.2" stroke="#ff6b2e" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.65" />
-    <path d="M69 103 L69 148" stroke="#ff6b2e" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.4" />
+    <path d="M69 96 Q86 98 88 122 Q89 146 69 152 Q49 146 50 122 Q52 98 69 96 Z" fill="url(#dragonGoldFill)" />
+    <path d="M52 110 Q69 116 86 110" stroke="#8a5c22" stroke-width="2" fill="none" />
+    <path d="M51 123 Q69 129 87 123" stroke="#8a5c22" stroke-width="2" fill="none" />
+    <path d="M52 136 Q69 142 86 136" stroke="#8a5c22" stroke-width="2" fill="none" />
+    <path d="M56 147 Q69 151 82 147" stroke="#8a5c22" stroke-width="2" fill="none" />
     <path d="M45 104 Q42 122 45 138" stroke="#ffffff" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.18" />
   </g>
 
@@ -162,15 +165,19 @@ const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="h
       <circle cx="20" cy="22" r="3" fill="#b9c3cd" opacity="0.55" />
       <circle cx="16" cy="14" r="2.2" fill="#c9d2da" opacity="0.4" />
     </g>
-    <path d="M58 16 C72 6 88 2 100 4 C86 10 76 15 66 24 Z" fill="url(#hornFill)" />
-    <path d="M58 16 C72 6 88 2 100 4" stroke="#7c3a40" stroke-width="1.4" fill="none" opacity="0.8" />
-    <path d="M60 26 C72 20 82 19 90 21 C80 25 72 29 66 34 Z" fill="url(#hornFill)" />
-    <path d="M60 26 C72 20 82 19 90 21" stroke="#7c3a40" stroke-width="1.2" fill="none" opacity="0.7" />
+    <path d="M60 15 C70 6 82 2 93 2 C83 9 74 14 66 22 Z" fill="url(#dragonGoldFill)" />
+    <path d="M60 15 C70 6 82 2 93 2" stroke="#8a5c22" stroke-width="1.2" fill="none" opacity="0.8" />
+    <path d="M62 25 C70 20 77 19 84 20 C77 24 70 28 65 33 Z" fill="url(#dragonGoldFill)" />
+    <path d="M62 25 C70 20 77 19 84 20" stroke="#8a5c22" stroke-width="1" fill="none" opacity="0.7" />
     <path d="M54 38 C58 58 60 78 62 96 L86 98 C78 76 74 56 68 32 Z" fill="url(#dragonHeadFill)" />
-    <path d="M57 44 C60 62 62 78 63 93" stroke="#e06250" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5" />
-    <path d="M70 44 L80 36 L74 50 Z" fill="url(#hornFill)" />
-    <path d="M74 60 L84 53 L78 66 Z" fill="url(#hornFill)" />
-    <path d="M78 78 L88 72 L82 84 Z" fill="url(#hornFill)" />
+    <path d="M55 42 C59 60 61 78 62 95 L69 96 C66 78 64 60 61 42 Z" fill="url(#dragonGoldFill)" />
+    <path d="M57 52 Q61 54 63 53" stroke="#8a5c22" stroke-width="1.6" fill="none" />
+    <path d="M58 64 Q62 66 64 65" stroke="#8a5c22" stroke-width="1.6" fill="none" />
+    <path d="M60 76 Q63 78 65 77" stroke="#8a5c22" stroke-width="1.6" fill="none" />
+    <path d="M61 87 Q64 89 66 88" stroke="#8a5c22" stroke-width="1.6" fill="none" />
+    <path d="M67 44 L77 36 L71 50 Z" fill="url(#hornFill)" />
+    <path d="M71 60 L81 53 L75 66 Z" fill="url(#hornFill)" />
+    <path d="M75 78 L85 72 L79 84 Z" fill="url(#hornFill)" />
     <path d="M61 14 Q48 15 42 21 Q32 25 24 31 Q21 33 23 36 L24 38 Q34 41 44 43 L57 46 Q63 44 64 38 Q66 24 61 14 Z" fill="url(#dragonHeadFill)" />
     <path d="M24 39 Q40 43 56 47 Q44 49 30 46 L24 44 Z" fill="#33121a" />
     <path d="M30 37 L32 43 L35 38 Z" fill="#efe4c8" />
@@ -181,11 +188,12 @@ const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="h
     <path d="M60 44 L72 46 L62 52 Z" fill="url(#hornFill)" />
     <ellipse cx="26.5" cy="30" rx="1.8" ry="2.4" fill="#33121a" />
     <circle cx="26.5" cy="30.5" r="0.8" fill="#ff6b2e" opacity="0.8" />
-    <path d="M38 19.5 L53 22.5" stroke="#33121a" stroke-width="3.5" stroke-linecap="round" fill="none" />
+    <path d="M36 26.5 L54 22.5" stroke="#33121a" stroke-width="3.5" stroke-linecap="round" fill="none" />
     <g id="eyes">
-      <path d="M35 23 L54 26.5 L53 33.5 L36 29.5 Z" fill="#ff8c1f" opacity="0.45" />
-      <path d="M37 24.5 L52.5 27.3 L51.6 31.8 L38 28.6 Z" fill="#ffa32e" />
-      <path d="M40 25.9 L50.5 27.9 L50 30.4 L40.5 28.3 Z" fill="#ffdf6e" />
+      <path d="M36 28.5 Q44 22.5 54 24.5 Q52 32 45 31.5 Q39 31 36 28.5 Z" fill="#ff8c1f" opacity="0.45" />
+      <path d="M37.5 28.3 Q44 23.8 52.5 25.2 Q51 30.8 45 30.4 Q40 30 37.5 28.3 Z" fill="#ffb640" />
+      <path d="M44 24.8 L45.8 27.4 L44.6 30.4 L42.8 27.6 Z" fill="#331208" />
+      <circle cx="47.5" cy="26.3" r="1" fill="#fff3cc" opacity="0.9" />
     </g>
     <g id="fire">
       <g transform="translate(24 41) rotate(30)">
