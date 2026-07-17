@@ -57,7 +57,7 @@ src/
     countdown.ts(.test) # Pure meeting-countdown math + countdownUrgency()
     poll.ts(.test)      # nextFetchDelayMs(): adaptive calendar-poll cadence
     calendar.ts(.test)  # CalendarSync interface + deterministic MockCalendarSync
-    character.ts(.test) # The mascot SVG: single source of truth for its part ids
+    character.ts(.test) # The mascot cast (knight + dragon) + rotation; part-id source of truth
     animation.ts        # OverlayAnimator (idle → walking → waving → presenting)
     url.ts(.test)       # safeExternalUrl(): http(s)-only guard for untrusted links
     tauri.ts            # Optional native bridge; degrades gracefully in a browser

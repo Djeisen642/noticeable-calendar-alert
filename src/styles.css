@@ -11,11 +11,18 @@
  *
  * Character choreography (states set by OverlayAnimator via data-state):
  *   walking    — legs step in counter-phase, arms swing, body bobs and tilts
- *   waving     — the greeting arm raises (transition) then waves (keyframes)
- *   presenting — arm lowers; the body breathes, the head sways, eyes blink
+ *   waving     — the greeting arm raises (transition) then waves (keyframes);
+ *                the dragon also fires a one-shot breath blast here, while the
+ *                bubble is still hidden and can't be scorched
+ *   presenting — arm lowers; the body breathes, the head sways, eyes blink;
+ *                the dragon puffs a small flame (plus nostril smoke) on a slow
+ *                loop, angled up so it clears the speech bubble
  * Urgency (data-urgency on the stage, from countdownUrgency): 'now' makes the
  * character hop and the countdown text pulse red; 'soon' turns it amber.
- * The animatable SVG part ids (#leg-left, #arm-wave, …) live in lib/character.ts.
+ * The cast rotates per alert; character-specific rules are scoped via
+ * [data-character] where shared ids need different pivots. Ids unique to one
+ * character (#cape, #wing-left, …) are simply inert for the others. The
+ * animatable SVG part ids (#leg-left, #arm-wave, …) live in lib/character.ts.
  */
 
 :root {
@@ -92,21 +99,32 @@ body {
 .character #cape,
 .character #leg-left,
 .character #leg-right,
+.character #arm-rest,
 .character #arm-wave,
 .character #body,
 .character #head,
 .character #eyes,
-.character #plume {
+.character #plume,
+.character #wing-left,
+.character #wing-right,
+.character #tail,
+.character #fire-inner,
+.character #smoke {
   transform-box: fill-box;
 }
 
-/* The sword arm pivots at the shoulder, pinned in viewBox coordinates: its
-   raised scimitar stretches the group's bounding box, so a fill-box
-   percentage origin would land on the blade instead of the joint. Keep in
-   sync with the shoulder position in lib/character.ts. */
-.character #arm-rest {
+/* The knight's sword arm pivots at the shoulder, pinned in viewBox
+   coordinates: the planted greatsword stretches the group's bounding box, so
+   a fill-box percentage origin would land on the blade instead of the joint.
+   Keep in sync with the shoulder position in lib/character.ts. */
+.character[data-character='knight'] #arm-rest {
   transform-box: view-box;
   transform-origin: 36px 97px;
+}
+
+/* The dragon's resting arm has no sword: a plain fill-box shoulder pivot. */
+.character[data-character='dragon'] #arm-rest {
+  transform-origin: 60% 12%;
 }
 
 /* Pivot points. */
@@ -135,6 +153,46 @@ body {
   transform-origin: 50% 80%; /* the neck */
 }
 
+/* Dragon pivots. The wings hinge where the bone meets the shoulder; the tail
+   swings from where it leaves the body. */
+.character #wing-left {
+  transform-origin: 92% 12%;
+}
+
+.character #wing-right {
+  transform-origin: 8% 12%;
+}
+
+.character #tail {
+  transform-origin: 6% 45%;
+}
+
+/* The dragon's head bounding box is stretched by the (hidden) flame and the
+   horns, so its sway pivot is pinned to the neck in viewBox coordinates.
+   Keep in sync with the skull position in lib/character.ts. */
+.character[data-character='dragon'] #head {
+  transform-box: view-box;
+  transform-origin: 72px 76px;
+}
+
+/* The fire scales/rotates around the mouth, pinned in viewBox coordinates
+   (its own bounding box is the flame, whose corner isn't the mouth). Hidden
+   until a breath animation runs — and under prefers-reduced-motion it simply
+   stays hidden. Keep the origin in sync with the mouth in lib/character.ts. */
+.character #fire {
+  transform-box: view-box;
+  transform-origin: 29px 61px;
+  opacity: 0;
+}
+
+.character #fire-inner {
+  transform-origin: 100% 50%; /* the mouth end of the inner flame */
+}
+
+.character #smoke {
+  opacity: 0;
+}
+
 /* The greeting arm is drawn raised; by default it hangs tucked at the side
    (rotated down at the shoulder). Waving releases it back to 0deg — the
    transition IS the arm-raise moment. */
@@ -155,6 +213,24 @@ body {
 
 .character.is-onstage #cape {
   animation: cape-billow 3800ms ease-in-out infinite;
+}
+
+/* The dragon's wings fan slowly in counter-phase and the tail swishes. */
+.character.is-onstage #wing-left {
+  animation: wing-flap-left 3400ms ease-in-out infinite;
+}
+
+.character.is-onstage #wing-right {
+  animation: wing-flap-right 3400ms ease-in-out infinite;
+}
+
+.character.is-onstage #tail {
+  animation: tail-sway 3600ms ease-in-out infinite;
+}
+
+/* The inner flame jitters constantly; invisible until #fire itself shows. */
+.character.is-onstage #fire-inner {
+  animation: fire-flicker 260ms ease-in-out infinite;
 }
 
 /* ---------- Walking ---------- */
@@ -186,6 +262,19 @@ body {
 /* The cape streams out with the stride instead of its idle billow. */
 .character[data-state='walking'] #cape {
   animation: cape-stream var(--stride-duration) ease-in-out infinite;
+}
+
+/* The dragon's wings and tail bounce with the stride instead of idling. */
+.character[data-state='walking'] #wing-left {
+  animation: wing-stream-left var(--stride-duration) ease-in-out infinite;
+}
+
+.character[data-state='walking'] #wing-right {
+  animation: wing-stream-right var(--stride-duration) ease-in-out infinite;
+}
+
+.character[data-state='walking'] #tail {
+  animation: tail-stream var(--stride-duration) ease-in-out infinite;
 }
 
 @keyframes stride {
@@ -266,6 +355,13 @@ body {
   }
 }
 
+/* The dragon greets with a one-shot fire blast while waving — the bubble is
+   still hidden during this state, so the flame can be big. The duration must
+   stay under WAVE_HOLD_MS (animation.ts) so the blast finishes on stage. */
+.character[data-state='waving'] #fire {
+  animation: fire-blast 1200ms ease-in-out both;
+}
+
 /* ---------- Presenting (bubble up) ---------- */
 
 /* The arm lowers back to the tucked base transform; the character breathes
@@ -276,6 +372,17 @@ body {
 
 .character[data-state='presenting'] #head {
   animation: head-sway 5200ms ease-in-out infinite;
+}
+
+/* Beside the bubble the dragon idles with a small periodic puff of flame
+   (tilted further upward so it clears the bubble) chased by nostril smoke.
+   Both ride the same 5600ms clock so the smoke follows each puff. */
+.character[data-state='presenting'] #fire {
+  animation: fire-puff 5600ms ease-in-out infinite;
+}
+
+.character[data-state='presenting'] #smoke {
+  animation: smoke-rise 5600ms ease-in-out infinite;
 }
 
 @keyframes breathe {
@@ -330,6 +437,156 @@ body {
   }
   50% {
     transform: rotate(1.5deg) scaleY(1.015);
+  }
+}
+
+/* Dragon life signs. The wings pivot at the shoulder: their tips point away
+   from the body, so the two sides need mirrored angles to flap together. */
+@keyframes wing-flap-left {
+  0%,
+  100% {
+    transform: rotate(4deg);
+  }
+  50% {
+    transform: rotate(-6deg);
+  }
+}
+
+@keyframes wing-flap-right {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes tail-sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+/* While walking the wings fold back and pump with the stride. */
+@keyframes wing-stream-left {
+  0%,
+  100% {
+    transform: rotate(8deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes wing-stream-right {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(-3deg);
+  }
+}
+
+@keyframes tail-stream {
+  0%,
+  100% {
+    transform: rotate(5deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+/* The greeting blast: swell out of the mouth, roar, gutter out. */
+@keyframes fire-blast {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  10% {
+    transform: scale(0.7);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(1) rotate(3deg);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.18) rotate(-2deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* The presenting-idle puff: mostly quiet, then a brief small flame angled
+   further upward (extra negative rotation) so it clears the speech bubble. */
+@keyframes fire-puff {
+  0%,
+  63% {
+    transform: scale(0.15) rotate(-14deg);
+    opacity: 0;
+  }
+  68% {
+    transform: scale(0.42) rotate(-16deg);
+    opacity: 1;
+  }
+  74% {
+    transform: scale(0.52) rotate(-12deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.4) rotate(-16deg);
+    opacity: 0.9;
+  }
+  86%,
+  100% {
+    transform: scale(0.15) rotate(-14deg);
+    opacity: 0;
+  }
+}
+
+/* Constant jitter on the inner flame; only visible while #fire itself is. */
+@keyframes fire-flicker {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.88, 1.08);
+  }
+}
+
+/* Nostril smoke drifts up right after each presenting puff gutters out. */
+@keyframes smoke-rise {
+  0%,
+  82% {
+    transform: translateY(2px);
+    opacity: 0;
+  }
+  88% {
+    transform: translateY(-3px);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-10px);
+    opacity: 0;
   }
 }
 
