@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    App icon master: a herald's trumpet with a hanging calendar banner.
+    Deliberately character-neutral (no knight) so the mascot roster can grow;
+    palette matches the in-app characters (gold / crimson / steel on navy).
+    Regenerate the PNG set from this file — see README.md in this folder.
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2c3552" />
+      <stop offset="0.55" stop-color="#1b2136" />
+      <stop offset="1" stop-color="#12151f" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.66" cy="0.30" r="0.75">
+      <stop offset="0" stop-color="#f0c463" stop-opacity="0.30" />
+      <stop offset="1" stop-color="#f0c463" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd987" />
+      <stop offset="0.5" stop-color="#f0c463" />
+      <stop offset="1" stop-color="#c9952f" />
+    </linearGradient>
+    <linearGradient id="goldDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e3b04b" />
+      <stop offset="1" stop-color="#a8781f" />
+    </linearGradient>
+    <linearGradient id="banner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c23a50" />
+      <stop offset="1" stop-color="#8c2438" />
+    </linearGradient>
+  </defs>
+
+  <!-- Tile -->
+  <rect x="0" y="0" width="1024" height="1024" rx="212" fill="url(#bg)" />
+  <rect x="0" y="0" width="1024" height="1024" rx="212" fill="url(#glow)" />
+  <rect x="7" y="7" width="1010" height="1010" rx="206" fill="none"
+        stroke="#ffffff" stroke-opacity="0.07" stroke-width="10" />
+
+  <!-- Herald trumpet + banner, tilted as one piece -->
+  <g transform="rotate(-20 512 470)">
+    <!-- Banner hangs from the tube (drawn first, behind the trumpet) -->
+    <g>
+      <!-- Hanging cords -->
+      <!-- Solid gold: a vertical line has a zero-width bounding box, which
+           disables objectBoundingBox gradient paints entirely. -->
+      <path d="M300 336 L300 476" stroke="#c9952f" stroke-width="16" stroke-linecap="round" />
+      <path d="M584 336 L584 476" stroke="#c9952f" stroke-width="16" stroke-linecap="round" />
+      <!-- Swallowtail gonfalon -->
+      <path d="M266 462 L618 462 L618 856 L442 776 L266 856 Z" fill="url(#banner)" />
+      <path d="M266 462 L618 462 L618 856 L442 776 L266 856 Z" fill="none"
+            stroke="url(#gold)" stroke-width="22" stroke-linejoin="round" />
+      <!-- Calendar glyph -->
+      <rect x="336" y="536" width="212" height="188" rx="28" fill="#f2f6fb" />
+      <path d="M336 564 Q336 536 364 536 L520 536 Q548 536 548 564 L548 602 L336 602 Z" fill="url(#gold)" />
+      <rect x="376" y="512" width="20" height="52" rx="10" fill="#8c2438" />
+      <rect x="488" y="512" width="20" height="52" rx="10" fill="#8c2438" />
+      <!-- Day grid: one date circled urgent-crimson -->
+      <circle cx="382" cy="640" r="14" fill="#aab4c8" />
+      <circle cx="442" cy="640" r="14" fill="#aab4c8" />
+      <circle cx="502" cy="640" r="14" fill="#aab4c8" />
+      <circle cx="382" cy="688" r="14" fill="#aab4c8" />
+      <circle cx="442" cy="688" r="20" fill="#c23a50" />
+      <circle cx="502" cy="688" r="14" fill="#aab4c8" />
+    </g>
+
+    <!-- Trumpet: mouthpiece, tube, rings, flaring bell -->
+    <path d="M172 358 Q140 358 132 344 Q126 332 132 320 Q140 306 172 306 Z" fill="url(#goldDeep)" />
+    <rect x="160" y="308" width="560" height="48" rx="24" fill="url(#gold)" />
+    <rect x="278" y="296" width="26" height="72" rx="12" fill="url(#goldDeep)" />
+    <rect x="562" y="296" width="26" height="72" rx="12" fill="url(#goldDeep)" />
+    <path d="M700 308 Q790 300 848 236 L848 428 Q790 364 700 356 Z" fill="url(#gold)" />
+    <ellipse cx="848" cy="332" rx="26" ry="98" fill="url(#goldDeep)" />
+    <ellipse cx="852" cy="332" rx="16" ry="80" fill="#6b4a12" />
+    <!-- Tube shine -->
+    <path d="M200 322 L640 322" stroke="#ffffff" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round" />
+
+    <!-- Fanfare -->
+    <path d="M906 246 A96 96 0 0 1 906 418" fill="none" stroke="url(#gold)"
+          stroke-width="26" stroke-linecap="round" />
+    <path d="M946 200 A160 160 0 0 1 946 464" fill="none" stroke="url(#gold)"
+          stroke-width="22" stroke-linecap="round" stroke-opacity="0.65" />
+    <path d="M886 148 L897 178 L927 190 L897 202 L886 232 L875 202 L845 190 L875 178 Z"
+          fill="#ffd987" />
+  </g>
+</svg>

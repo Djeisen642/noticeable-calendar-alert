@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    Small-size variant of icon.svg, hand-tuned to read at 32px and below
+    (tray / window icon): the fanfare, sparkle, cords, rings, and day grid
+    are dropped, every surviving shape is fattened, and the banner attaches
+    directly to the horn. Keep the two files' compositions in sync — this is
+    the same icon, not a different one. See README.md for which PNGs come
+    from which master.
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2c3552" />
+      <stop offset="0.55" stop-color="#1b2136" />
+      <stop offset="1" stop-color="#12151f" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd987" />
+      <stop offset="0.5" stop-color="#f0c463" />
+      <stop offset="1" stop-color="#c9952f" />
+    </linearGradient>
+    <linearGradient id="goldDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e3b04b" />
+      <stop offset="1" stop-color="#a8781f" />
+    </linearGradient>
+    <linearGradient id="banner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c23a50" />
+      <stop offset="1" stop-color="#8c2438" />
+    </linearGradient>
+  </defs>
+
+  <!-- Tile -->
+  <rect x="0" y="0" width="1024" height="1024" rx="212" fill="url(#bg)" />
+
+  <g transform="rotate(-20 512 470)">
+    <!-- Banner: hangs straight off the horn, fat gold border -->
+    <path d="M304 330 L636 330 L636 852 L470 766 L304 852 Z" fill="url(#banner)" />
+    <path d="M304 330 L636 330 L636 852 L470 766 L304 852 Z" fill="none"
+          stroke="url(#gold)" stroke-width="36" stroke-linejoin="round" />
+    <!-- Calendar: header bar + one bold alert date -->
+    <rect x="368" y="428" width="204" height="216" rx="38" fill="#f2f6fb" />
+    <path d="M368 466 Q368 428 406 428 L534 428 Q572 428 572 466 L572 512 L368 512 Z"
+          fill="url(#gold)" />
+    <circle cx="470" cy="580" r="46" fill="#c23a50" />
+
+    <!-- Horn: thick tube + flaring bell, no small fittings -->
+    <rect x="140" y="272" width="540" height="92" rx="46" fill="url(#gold)" />
+    <path d="M650 280 Q770 266 886 184 L886 452 Q770 370 650 356 Z" fill="url(#gold)" />
+    <ellipse cx="886" cy="318" rx="34" ry="136" fill="url(#goldDeep)" />
+
+    <!-- Single fanfare arc -->
+    <path d="M946 232 A118 118 0 0 1 946 448" fill="none" stroke="url(#gold)"
+          stroke-width="46" stroke-linecap="round" />
+  </g>
+</svg>

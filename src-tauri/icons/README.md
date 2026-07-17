@@ -1,25 +1,55 @@
 # App icons
 
 This folder holds the icon set referenced by `tauri.conf.json`
-(`bundle.icon`) and the tray (`app.trayIcon.iconPath`).
+(`bundle.icon`); the tray reuses the embedded window icon at runtime.
 
-## Committed placeholders
+## The design
 
-`32x32.png`, `128x128.png`, `128x128@2x.png`, and `icon.png` are committed
-**placeholder** icons (a flat blue tile) so the project compiles and runs in
-development without an extra setup step — `generate_context!` embeds the window
-icon at build time and fails if it is missing.
+A herald's trumpet with a crimson swallowtail banner carrying a calendar
+glyph — the app's "announce the meeting" concept, drawn in the same
+gold / crimson / steel-on-navy palette as the in-app characters but
+deliberately **character-neutral** so the mascot roster can grow without
+dating the icon.
 
-## Before a real release
+## Source of truth
 
-Replace the placeholders and regenerate the full platform set from a single
-1024×1024 source PNG:
+Two SVG masters, same composition at two detail levels:
+
+- `icon.svg` — the full-detail art (fanfare arcs, sparkle, cords, day grid).
+- `icon-small.svg` — hand-tuned for ≤32px: detail dropped, shapes fattened,
+  a single bold alert date instead of the grid. Keep it in sync with
+  `icon.svg` when the design changes — it is the same icon, simplified.
+
+| File             | Size      | Rendered from    | Used for                               |
+| ---------------- | --------- | ---------------- | -------------------------------------- |
+| `32x32.png`      | 32×32     | `icon-small.svg` | Windows window/tray icon               |
+| `128x128.png`    | 128×128   | `icon.svg`       | Linux window icon                      |
+| `128x128@2x.png` | 256×256   | `icon.svg`       | HiDPI                                  |
+| `icon.png`       | 1024×1024 | `icon.svg`       | Default icon + source for `tauri icon` |
+
+To regenerate after editing the SVGs, rasterize each master at its sizes
+(e.g. with `@resvg/resvg-js`, `rsvg-convert`, or Inkscape) and overwrite the
+PNGs above. Note when rasterizing: headless-Chromium screenshots silently
+come out blank below ~200px windows, and a pure-vertical line has a
+zero-width bounding box which disables `objectBoundingBox` gradient strokes —
+`icon.svg` uses solid fills where that matters.
+
+## Before a release
+
+Generate the remaining platform formats from the 1024×1024 `icon.png`:
 
 ```bash
-npm run tauri icon path/to/source-icon.png
+npm run tauri icon src-tauri/icons/icon.png
 ```
 
-That produces `icon.ico` (Windows) and `icon.icns` (macOS) in addition to the
-PNGs. **Add `icons/icon.ico` and `icons/icon.icns` back into the `bundle.icon`
-array** in `tauri.conf.json` before building Windows/macOS installers — they are
-omitted from the committed config because valid binaries aren't checked in.
+That produces `icon.ico` (Windows) and `icon.icns` (macOS). **Add
+`icons/icon.ico` and `icons/icon.icns` back into the `bundle.icon` array**
+in `tauri.conf.json` before building Windows/macOS installers — they are
+omitted from the committed config because those binaries aren't checked in.
+
+Note that `tauri icon` derives every `.ico` sub-size from the one detailed
+source, so the small entries inside it won't get the hand-tuned art. For a
+polished release `.ico`, assemble it from per-size PNGs instead (16/32 from
+`icon-small.svg`, larger from `icon.svg`) with an ico packer such as
+ImageMagick (`magick convert 16.png 32.png 48.png 256.png icon.ico`) or the
+`png-to-ico` npm package.
