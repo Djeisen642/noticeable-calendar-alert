@@ -130,13 +130,11 @@ const OWL_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http
       <circle cx="55" cy="54" r="11.5" fill="#ffb938" />
       <circle cx="55" cy="54" r="11.5" fill="none" stroke="#a86a14" stroke-width="1.6" />
       <circle cx="57" cy="52.5" r="6" fill="#2b1c10" />
-      <circle cx="59" cy="51" r="2.2" fill="#ffffff" />
-      <circle cx="52.5" cy="57" r="1.1" fill="#ffffff" opacity="0.8" />
+            <circle cx="55" cy="54.5" r="1.7" fill="#ffffff" opacity="0.95" />
       <circle cx="83" cy="54" r="11.5" fill="#ffb938" />
       <circle cx="83" cy="54" r="11.5" fill="none" stroke="#a86a14" stroke-width="1.6" />
       <circle cx="81" cy="52.5" r="6" fill="#2b1c10" />
-      <circle cx="83" cy="51" r="2.2" fill="#ffffff" />
-      <circle cx="80.5" cy="57" r="1.1" fill="#ffffff" opacity="0.8" />
+            <circle cx="83" cy="54.5" r="1.7" fill="#ffffff" opacity="0.95" />
     </g>
     <!-- Angry flat-topped eyes: cream caps erase everything above the brow
          chord (so no eyeball ever peeks over), then the brow slashes draw
