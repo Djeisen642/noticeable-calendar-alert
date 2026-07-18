@@ -167,7 +167,7 @@ body {
 
 .character #tail {
   transform-box: view-box;
-  transform-origin: 90px 150px;
+  transform-origin: 86px 150px;
 }
 
 /* The dragon's whole neck lives in the head group: the sway pivot sits at
@@ -185,7 +185,7 @@ body {
    lib/characters/dragon.ts. */
 .character #fire {
   transform-box: view-box;
-  transform-origin: 24px 41px;
+  transform-origin: 25px 45px;
   opacity: 0;
 }
 

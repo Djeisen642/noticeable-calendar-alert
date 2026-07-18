@@ -1,15 +1,18 @@
 /**
- * The dragon — a crimson, sharp-angled fire-breather. Deliberately menacing,
- * not cute: shape language leans on triangles everywhere (swept-back horns,
- * jagged wing tears, side spikes, fangs), a heavy brow ridge over a narrow
- * ember-glow eye, a wedge-shaped jaw with visible teeth, and an armored
- * chest whose plate seams glow like a molten core.
+ * The dragon — a crimson, comic-inked fire-breather modeled on classic
+ * heraldic red-dragon art. Menacing by construction: every shape carries a
+ * dark ink outline, the palette is deep brick red with flat shadow tones,
+ * the head is a roaring crocodilian wedge with a fire-lit mouth, and the
+ * silhouette bristles — ridged swept horns, ear frills, dorsal spikes down
+ * the neck, flank spikes, clawed digitigrade haunches, and a tail that
+ * sweeps along the ground to a pointed tip.
  *
  * Anatomy notes (why it reads as a dragon, not a dog with wings): the head is
- * a crocodilian wedge in PROFILE — one tapering skull-plus-jaw, slightly open,
- * teeth in the gap — carried on a thick S-curved neck that joins the BACK of
- * the skull and rises from the shoulders. The whole neck lives inside #head,
- * so the presenting head-sway pivots at the neck root and the head serpentines.
+ * a tapering skull-plus-jaw in PROFILE, jaws open mid-roar, carried on a
+ * thick S-curved neck that joins the BACK of the skull and rises from the
+ * shoulders; the throat and belly are plated with overlapping gold crescents.
+ * The whole neck lives inside #head, so the presenting head-sway pivots at
+ * the neck root and the head serpentines.
  *
  * Dragon-specific animatable parts (beyond the core contract in character.ts):
  *   #wing-left / #wing-right — flap on stage, pump with the stride
@@ -31,9 +34,9 @@ import { CORE_PART_IDS, type Character } from './character.ts';
 
 /**
  * Draw order (back to front): shadow, tail, wings, legs, resting arm, body
- * (plates + side spikes), waving arm, head (neck with ridge spikes, horns,
- * skull/jaw wedge, teeth, eye — with the fire breath and nostril smoke
- * anchored at the open mouth, on top).
+ * (gold belly plates + flank spikes + scale rows), waving arm, head (thick
+ * crescent-plated neck with dorsal spikes, ridged horns, roaring skull/jaw,
+ * glowing mouth, ember eye — with the fire and nostril smoke at the maw).
  *
  * The fire is drawn pointing LEFT from the mouth inside a wrapper rotated 30°
  * clockwise, so it breathes up-and-away from the speech bubble; it is hidden
@@ -42,163 +45,170 @@ import { CORE_PART_IDS, type Character } from './character.ts';
 const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="scaleFill" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#d84f41" />
-      <stop offset="0.55" stop-color="#ad2b26" />
-      <stop offset="1" stop-color="#841d1b" />
+      <stop offset="0" stop-color="#cd4534" />
+      <stop offset="0.55" stop-color="#a5281f" />
+      <stop offset="1" stop-color="#7c1a15" />
     </linearGradient>
     <linearGradient id="dragonHeadFill" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0" stop-color="#d85545" />
-      <stop offset="0.6" stop-color="#b02c26" />
-      <stop offset="1" stop-color="#8a1f1d" />
+      <stop offset="0" stop-color="#cd4a36" />
+      <stop offset="0.6" stop-color="#a5281f" />
+      <stop offset="1" stop-color="#801b16" />
     </linearGradient>
     <linearGradient id="wingFill" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8a2420" />
-      <stop offset="1" stop-color="#4a1216" />
+      <stop offset="0" stop-color="#b04a33" />
+      <stop offset="1" stop-color="#6e2318" />
     </linearGradient>
     <linearGradient id="dragonGoldFill" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e2b45c" />
-      <stop offset="1" stop-color="#a87428" />
+      <stop offset="0" stop-color="#ecd29b" />
+      <stop offset="1" stop-color="#cfa75c" />
     </linearGradient>
-    <linearGradient id="hornFill" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#5c2a2e" />
-      <stop offset="1" stop-color="#2e1114" />
-    </linearGradient>
-    <linearGradient id="clawFill" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#d9c294" />
-      <stop offset="1" stop-color="#b0925e" />
-    </linearGradient>
+    <radialGradient id="mouthGlow" cx="0.7" cy="0.5" r="0.8">
+      <stop offset="0" stop-color="#ffb23d" />
+      <stop offset="0.55" stop-color="#e0622a" />
+      <stop offset="1" stop-color="#7c1a15" />
+    </radialGradient>
   </defs>
 
   <!-- Ground shadow -->
-  <ellipse cx="68" cy="183" rx="34" ry="6" fill="#000000" opacity="0.16" />
+  <ellipse cx="72" cy="183" rx="40" ry="6" fill="#000000" opacity="0.16" />
 
-  <!-- Tail: a long sweep ending in the classic spiral curl, ridged with
-       spikes and tapering to a point -->
+  <!-- Tail: sweeps low along the ground to the right, gold under-bands,
+       dorsal ridge spikes, tapering to a point -->
   <g id="tail">
-    <path d="M88 148 Q116 162 128 148" stroke="url(#scaleFill)" stroke-width="13" stroke-linecap="round" fill="none" />
-    <path d="M128 148 Q136 136 128 128 Q118 122 114 132 Q112 140 120 142" stroke="#a8302b" stroke-width="7" stroke-linecap="round" fill="none" />
-    <path d="M120 142 Q126 143 127 138" stroke="#8a1f1d" stroke-width="4" stroke-linecap="round" fill="none" />
-    <path d="M127 140 L133 132 L129 141 Z" fill="url(#hornFill)" />
-    <path d="M100 148 L104 138 L109 149 Z" fill="url(#hornFill)" />
-    <path d="M114 153 L120 145 L123 156 Z" fill="url(#hornFill)" />
+    <path d="M82 144 C96 154 108 166 120 171 C128 174 133 170 134 161 C134 171 129 177 121 176 C107 173 92 162 78 152 Z" fill="url(#scaleFill)" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M94 158 Q98 163 103 165" stroke="url(#dragonGoldFill)" stroke-width="4" fill="none" />
+    <path d="M108 166 Q112 170 117 171" stroke="url(#dragonGoldFill)" stroke-width="3.4" fill="none" />
+    <path d="M123 172 Q126 173 129 172" stroke="url(#dragonGoldFill)" stroke-width="2.6" fill="none" />
+    <path d="M92 154 L97 146 L101 156 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M105 162 L110 155 L114 165 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M117 169 L122 163 L125 172 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
   </g>
 
-  <!-- Wings: raised bat wings with scalloped trailing edges; finger bones
-       radiate from the wrist to each scallop point -->
+  <!-- Wings: bat wings with deep concave scallops and long ink finger bones;
+       the near wing is raised high, the far wing folds behind the neck -->
   <g id="wing-left">
-    <path d="M52 90 Q30 60 16 36 Q10 54 6 72 Q13 66 16 84 Q23 76 26 96 Q33 88 36 106 Q42 98 52 98 Z" fill="url(#wingFill)" />
-    <path d="M22 48 L6 72" stroke="#4a1216" stroke-width="2.2" fill="none" />
-    <path d="M22 48 L16 84" stroke="#4a1216" stroke-width="2.2" fill="none" />
-    <path d="M22 48 L26 96" stroke="#4a1216" stroke-width="2.2" fill="none" />
-    <path d="M22 48 L36 106" stroke="#4a1216" stroke-width="2.2" fill="none" />
-    <path d="M52 90 Q30 60 16 36" stroke="#33121a" stroke-width="6" stroke-linecap="round" fill="none" />
-    <path d="M16 36 L8 26 L18 32 Z" fill="url(#clawFill)" />
+    <path d="M52 90 Q32 62 18 32 Q10 52 6 74 Q13 64 16 86 Q22 74 27 98 Q32 86 37 108 Q42 96 52 98 Z" fill="url(#wingFill)" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M24 46 L6 74" stroke="#2e0b0d" stroke-width="2" fill="none" />
+    <path d="M24 46 L16 86" stroke="#2e0b0d" stroke-width="2" fill="none" />
+    <path d="M24 46 L27 98" stroke="#2e0b0d" stroke-width="2" fill="none" />
+    <path d="M24 46 L37 108" stroke="#2e0b0d" stroke-width="2" fill="none" />
+    <path d="M52 90 Q32 62 18 32" stroke="#2e0b0d" stroke-width="5.5" stroke-linecap="round" fill="none" />
+    <path d="M18 32 L11 22 L21 28 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
   </g>
   <g id="wing-right">
-    <path d="M86 90 Q108 58 130 34 Q136 52 139 70 Q131 64 128 84 Q120 76 116 98 Q108 90 104 108 Q97 100 92 100 Z" fill="url(#wingFill)" />
-    <path d="M122 46 L139 70" stroke="#4a1216" stroke-width="2.2" fill="none" />
-    <path d="M122 46 L128 84" stroke="#4a1216" stroke-width="2.2" fill="none" />
-    <path d="M122 46 L116 98" stroke="#4a1216" stroke-width="2.2" fill="none" />
-    <path d="M122 46 L104 108" stroke="#4a1216" stroke-width="2.2" fill="none" />
-    <path d="M86 90 Q108 58 130 34" stroke="#33121a" stroke-width="6" stroke-linecap="round" fill="none" />
-    <path d="M130 34 L138 24 L128 30 Z" fill="url(#clawFill)" />
+    <path d="M86 90 Q104 54 126 22 Q136 40 139 58 Q131 50 134 78 Q125 64 122 96 Q114 80 108 110 Q101 94 92 100 Z" fill="url(#wingFill)" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M112 44 L139 58" stroke="#2e0b0d" stroke-width="2" fill="none" />
+    <path d="M112 44 L134 78" stroke="#2e0b0d" stroke-width="2" fill="none" />
+    <path d="M112 44 L122 96" stroke="#2e0b0d" stroke-width="2" fill="none" />
+    <path d="M112 44 L108 110" stroke="#2e0b0d" stroke-width="2" fill="none" />
+    <path d="M86 90 Q104 54 126 22" stroke="#2e0b0d" stroke-width="5.5" stroke-linecap="round" fill="none" />
+    <path d="M126 22 L133 11 L122 18 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
   </g>
 
-  <!-- Legs: heavy haunches + three long bone claws each -->
+  <!-- Legs: muscular digitigrade haunches, dark claws, scale arcs -->
   <g id="leg-left">
-    <rect x="50" y="140" width="17" height="30" rx="8" fill="#a8302b" />
-    <ellipse cx="57" cy="175" rx="12" ry="6.5" fill="#7c1b18" />
-    <path d="M48 171 L40 179 L50 180 Z" fill="url(#clawFill)" />
-    <path d="M54 174 L49 183 L59 181 Z" fill="url(#clawFill)" />
-    <path d="M60 175 L58 184 L66 181 Z" fill="url(#clawFill)" />
+    <path d="M46 132 Q41 150 48 163 Q54 171 64 169 L66 148 Q64 136 57 131 Z" fill="url(#scaleFill)" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M49 143 Q52 146 55 143 M57 143 Q60 146 63 143" stroke="#2e0b0d" stroke-width="1" fill="none" opacity="0.35" />
+    <path d="M47 167 Q44 175 52 177 L66 177 Q66 170 61 167 Z" fill="#8a1f18" stroke="#2e0b0d" stroke-width="1.4" />
+    <path d="M50 172 L41 178 L51 180 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M56 174 L50 182 L60 181 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M62 175 L59 183 L67 180 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
   </g>
   <g id="leg-right">
-    <rect x="70" y="140" width="17" height="30" rx="8" fill="#9c2823" />
-    <ellipse cx="78" cy="175" rx="12" ry="6.5" fill="#701714" />
-    <path d="M69 171 L61 179 L71 180 Z" fill="url(#clawFill)" />
-    <path d="M75 174 L70 183 L80 181 Z" fill="url(#clawFill)" />
-    <path d="M81 175 L79 184 L87 181 Z" fill="url(#clawFill)" />
+    <path d="M68 132 Q63 150 70 163 Q76 171 86 169 L88 148 Q86 136 79 131 Z" fill="#9c241c" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M71 143 Q74 146 77 143 M79 143 Q82 146 85 143" stroke="#2e0b0d" stroke-width="1" fill="none" opacity="0.35" />
+    <path d="M69 167 Q66 175 74 177 L88 177 Q88 170 83 167 Z" fill="#7c1a15" stroke="#2e0b0d" stroke-width="1.4" />
+    <path d="M72 172 L63 178 L73 180 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M78 174 L72 182 L82 181 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M84 175 L81 183 L89 180 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
   </g>
 
-  <!-- Resting arm: hangs at the side, claws curled -->
+  <!-- Resting arm: foreleg reaching down, claws curled -->
   <g id="arm-rest">
-    <path d="M48 102 Q38 110 37 122" stroke="#a8302b" stroke-width="12" stroke-linecap="round" fill="none" />
-    <circle cx="37" cy="125" r="6.5" fill="#7c1b18" />
-    <path d="M33 128 L27 136 L35 134 Z" fill="url(#clawFill)" />
-    <path d="M38 130 L37 139 L44 133 Z" fill="url(#clawFill)" />
+    <path d="M48 102 Q37 110 36 123" stroke="#2e0b0d" stroke-width="15" stroke-linecap="round" fill="none" />
+    <path d="M48 102 Q37 110 36 123" stroke="#a5281f" stroke-width="11.5" stroke-linecap="round" fill="none" />
+    <circle cx="36" cy="126" r="6.5" fill="#8a1f18" stroke="#2e0b0d" stroke-width="1.4" />
+    <path d="M32 129 L25 137 L34 135 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M38 131 L37 140 L44 134 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
   </g>
 
-  <!-- Body: chest leaning forward under narrow shoulders, wide haunches,
-       armored chest plates over a molten-glow core, spikes down both flanks -->
+  <!-- Body: compact muscular torso, narrow gold belly column, flank spikes,
+       flat shadow down the right side, scale arcs on the margins -->
   <g id="body">
-    <path d="M52 92 L88 92 Q94 94 93 102 Q99 122 97 140 Q95 157 69 158 Q43 157 41 140 Q39 122 47 102 Q46 94 52 92 Z" fill="url(#scaleFill)" />
-    <path d="M42 106 L30 112 L42 120 Z" fill="url(#hornFill)" />
-    <path d="M40 122 L29 128 L40 135 Z" fill="url(#hornFill)" />
-    <path d="M42 138 L32 143 L42 149 Z" fill="url(#hornFill)" />
-    <path d="M96 106 L108 112 L96 120 Z" fill="url(#hornFill)" />
-    <path d="M98 122 L109 128 L98 135 Z" fill="url(#hornFill)" />
-    <path d="M96 138 L106 143 L96 149 Z" fill="url(#hornFill)" />
-    <path d="M69 96 Q86 98 88 122 Q89 146 69 152 Q49 146 50 122 Q52 98 69 96 Z" fill="url(#dragonGoldFill)" />
-    <path d="M52 110 Q69 116 86 110" stroke="#8a5c22" stroke-width="2" fill="none" />
-    <path d="M51 123 Q69 129 87 123" stroke="#8a5c22" stroke-width="2" fill="none" />
-    <path d="M52 136 Q69 142 86 136" stroke="#8a5c22" stroke-width="2" fill="none" />
-    <path d="M56 147 Q69 151 82 147" stroke="#8a5c22" stroke-width="2" fill="none" />
-    <path d="M45 104 Q42 122 45 138" stroke="#ffffff" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.18" />
+    <path d="M54 92 L88 92 Q94 96 92 106 Q96 122 94 138 Q92 152 70 154 Q46 152 44 138 Q42 122 47 106 Q45 96 54 92 Z" fill="url(#scaleFill)" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M87 96 Q92 118 89 144 Q92 140 93 124 Q94 106 87 96 Z" fill="#7c1a15" opacity="0.8" />
+    <path d="M45 106 L34 112 L45 119 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M44 124 L33 130 L44 136 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M93 106 L104 112 L93 119 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M94 124 L105 130 L94 136 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M69 102 Q77 104 79 120 Q80 138 69 144 Q58 138 59 120 Q61 104 69 102 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1.4" />
+    <path d="M60 113 Q69 118 78 113" stroke="#a87b33" stroke-width="1.8" fill="none" />
+    <path d="M59 124 Q69 129 79 124" stroke="#a87b33" stroke-width="1.8" fill="none" />
+    <path d="M60 134 Q69 139 78 134" stroke="#a87b33" stroke-width="1.8" fill="none" />
+    <path d="M62 141 Q69 145 76 141" stroke="#a87b33" stroke-width="1.8" fill="none" />
+    <path d="M47 112 Q50 115 53 112 M47 126 Q50 129 53 126 M48 140 Q51 143 54 140" stroke="#2e0b0d" stroke-width="1" fill="none" opacity="0.35" />
+    <path d="M85 112 Q88 115 91 112 M85 126 Q88 129 91 126 M84 140 Q87 143 90 140" stroke="#2e0b0d" stroke-width="1" fill="none" opacity="0.35" />
   </g>
 
   <!-- Greeting arm: drawn RAISED (same shoulder geometry as the knight so the
-       shared tuck/wave choreography fits); three bone claws on the paw -->
+       shared tuck/wave choreography fits); three dark claws on the paw -->
   <g id="arm-wave">
-    <path d="M93 99 Q114 70 120 50" stroke="#a8302b" stroke-width="14" stroke-linecap="round" fill="none" />
-    <circle cx="121" cy="47" r="9.5" fill="#7c1b18" />
-    <path d="M113 41 L107 31 L117 35 Z" fill="url(#clawFill)" />
-    <path d="M120 38 L119 27 L127 34 Z" fill="url(#clawFill)" />
-    <path d="M127 42 L134 33 L131 44 Z" fill="url(#clawFill)" />
+    <path d="M93 99 Q114 70 120 50" stroke="#2e0b0d" stroke-width="17" stroke-linecap="round" fill="none" />
+    <path d="M93 99 Q114 70 120 50" stroke="#a5281f" stroke-width="13.5" stroke-linecap="round" fill="none" />
+    <circle cx="121" cy="47" r="9.5" fill="#8a1f18" stroke="#2e0b0d" stroke-width="1.4" />
+    <path d="M113 41 L107 31 L117 35 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M120 38 L119 27 L127 34 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M127 42 L134 33 L131 44 Z" fill="#5c3226" stroke="#2e0b0d" stroke-width="1" />
   </g>
 
-  <!-- Head: a crocodilian wedge in profile — skull and tapering upper jaw as
-       one shape, slightly open lower jaw with teeth in the gap — carried on a
-       thick S-curved neck with ridge spikes; swept-back horns; the fire and
-       nostril smoke anchor at the open mouth -->
+  <!-- Head: thick arched neck plated with overlapping gold crescents and a
+       spiked dorsal ridge, carrying a roaring wedge skull — ridged swept
+       horns, ear frills, glowing open maw with interlocked fangs -->
   <g id="head">
     <g id="smoke">
-      <circle cx="20" cy="22" r="3" fill="#b9c3cd" opacity="0.55" />
-      <circle cx="16" cy="14" r="2.2" fill="#c9d2da" opacity="0.4" />
+      <circle cx="17" cy="14" r="3" fill="#b9c3cd" opacity="0.55" />
+      <circle cx="13" cy="6" r="2.2" fill="#c9d2da" opacity="0.4" />
     </g>
-    <path d="M60 15 C70 6 82 2 93 2 C83 9 74 14 66 22 Z" fill="url(#dragonGoldFill)" />
-    <path d="M60 15 C70 6 82 2 93 2" stroke="#8a5c22" stroke-width="1.2" fill="none" opacity="0.8" />
-    <path d="M62 25 C70 20 77 19 84 20 C77 24 70 28 65 33 Z" fill="url(#dragonGoldFill)" />
-    <path d="M62 25 C70 20 77 19 84 20" stroke="#8a5c22" stroke-width="1" fill="none" opacity="0.7" />
-    <path d="M54 38 C58 58 60 78 62 96 L86 98 C78 76 74 56 68 32 Z" fill="url(#dragonHeadFill)" />
-    <path d="M55 42 C59 60 61 78 62 95 L69 96 C66 78 64 60 61 42 Z" fill="url(#dragonGoldFill)" />
-    <path d="M57 52 Q61 54 63 53" stroke="#8a5c22" stroke-width="1.6" fill="none" />
-    <path d="M58 64 Q62 66 64 65" stroke="#8a5c22" stroke-width="1.6" fill="none" />
-    <path d="M60 76 Q63 78 65 77" stroke="#8a5c22" stroke-width="1.6" fill="none" />
-    <path d="M61 87 Q64 89 66 88" stroke="#8a5c22" stroke-width="1.6" fill="none" />
-    <path d="M67 44 L77 36 L71 50 Z" fill="url(#hornFill)" />
-    <path d="M71 60 L81 53 L75 66 Z" fill="url(#hornFill)" />
-    <path d="M75 78 L85 72 L79 84 Z" fill="url(#hornFill)" />
-    <path d="M61 14 Q48 15 42 21 Q32 25 24 31 Q21 33 23 36 L24 38 Q34 41 44 43 L57 46 Q63 44 64 38 Q66 24 61 14 Z" fill="url(#dragonHeadFill)" />
-    <path d="M23 37 Q40 42 56 46 Q38 50 21 51 Q19 44 23 37 Z" fill="#3a0d10" />
-    <path d="M30 38 L32.5 45 L36 39.5 Z" fill="#efe4c8" />
-    <path d="M38 40 L40.5 47 L44 41.5 Z" fill="#efe4c8" />
-    <path d="M46 42 L48 48.5 L51.5 43.5 Z" fill="#efe4c8" />
-    <path d="M56 46 Q38 49 21 51 Q19 53 22 56 Q38 61 52 57 Q57 53 56 46 Z" fill="url(#dragonHeadFill)" />
-    <path d="M26 50.5 L28 45.5 L31 51 Z" fill="#efe4c8" />
-    <path d="M34 51.5 L36 46.5 L39 52 Z" fill="#efe4c8" />
-    <path d="M25 55 Q35 58.5 46 57.5" stroke="#8a5c22" stroke-width="1.8" fill="none" opacity="0.8" />
-    <path d="M60 44 L72 46 L62 52 Z" fill="url(#hornFill)" />
-    <ellipse cx="26.5" cy="30" rx="1.8" ry="2.4" fill="#33121a" />
-    <circle cx="26.5" cy="30.5" r="0.8" fill="#ff6b2e" opacity="0.8" />
-    <path d="M36 26.5 L54 22.5" stroke="#33121a" stroke-width="3.5" stroke-linecap="round" fill="none" />
+    <path d="M48 44 C41 62 44 82 58 96 L92 98 C86 74 76 52 62 34 Z" fill="url(#dragonHeadFill)" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M62 38 C74 56 82 76 88 96 L92 98 C86 72 76 50 66 36 Z" fill="#7c1a15" opacity="0.8" />
+    <path d="M63 42 L72 35 L68 48 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M71 56 L80 49 L76 62 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M77 70 L85 64 L82 76 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M82 84 L89 78 L87 90 Z" fill="#5c1512" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M45 47 Q52 53 58 46 L58 52 Q51 59 45 53 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M44 56 Q51 62 59 55 L59 61 Q51 68 44 62 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M44 65 Q52 71 61 64 L61 70 Q52 77 44 71 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M46 74 Q55 80 64 73 L64 79 Q55 86 46 80 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M49 83 Q58 89 68 82 L68 88 Q58 95 49 89 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1" />
+    <path d="M53 91 Q63 97 72 90 L72 96 Q63 103 53 97 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1" />
+    <g transform="translate(6 8) scale(0.88)">
+    <path d="M62 13 C70 4 80 -3 92 -5 C84 3 76 9 70 18 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1.4" />
+    <path d="M84 -3 C87 -4 90 -5 92 -5 C89 -2 87 0 84 2 Z" fill="#5c3226" />
+    <path d="M70 6 Q75 3 80 1 M66 12 Q71 9 76 6" stroke="#a87b33" stroke-width="1.2" fill="none" />
+    <path d="M56 17 C60 8 66 1 74 -3 C69 5 65 11 62 20 Z" fill="url(#dragonGoldFill)" stroke="#2e0b0d" stroke-width="1.2" />
+    <path d="M62 12 Q48 12 40 18 Q30 20 22 25 Q18 27 20 30 L22 33 Q32 36 44 39 L58 44 Q64 42 65 36 Q66 22 62 12 Z" fill="url(#dragonHeadFill)" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M21 32 Q38 38 57 45 Q40 50 24 52 Q18 42 21 32 Z" fill="url(#mouthGlow)" stroke="#2e0b0d" stroke-width="1.2" />
+    <path d="M28 33 L31 41 L35 34.5 Z" fill="#f4ead2" stroke="#2e0b0d" stroke-width="0.8" />
+    <path d="M37 35.5 L40 43 L44 37 Z" fill="#f4ead2" stroke="#2e0b0d" stroke-width="0.8" />
+    <path d="M46 38 L48.5 45.5 L52.5 39.5 Z" fill="#f4ead2" stroke="#2e0b0d" stroke-width="0.8" />
+    <path d="M58 44 Q40 48 22 52 Q19 56 24 60 Q42 64 54 56 Q59 50 58 44 Z" fill="url(#dragonHeadFill)" stroke="#2e0b0d" stroke-width="1.6" />
+    <path d="M26 51.5 L28 45.5 L31.5 52 Z" fill="#f4ead2" stroke="#2e0b0d" stroke-width="0.8" />
+    <path d="M35 52.5 L37 46.5 L40.5 53 Z" fill="#f4ead2" stroke="#2e0b0d" stroke-width="0.8" />
+    <path d="M26 57 Q37 60.5 48 58" stroke="url(#dragonGoldFill)" stroke-width="2.6" fill="none" />
+    <path d="M58 38 L72 32 L61 45 Z" fill="#8a1f18" stroke="#2e0b0d" stroke-width="1.2" />
+    <path d="M60 45 L75 44 L62 53 Z" fill="#7c1a15" stroke="#2e0b0d" stroke-width="1.2" />
+    <ellipse cx="25" cy="22" rx="1.8" ry="2.4" fill="#2e0b0d" />
+    <circle cx="25" cy="22.5" r="0.8" fill="#ff6b2e" opacity="0.8" />
+    <path d="M35 19 L53 15.5" stroke="#2e0b0d" stroke-width="3.5" stroke-linecap="round" fill="none" />
     <g id="eyes">
-      <path d="M36 28.5 Q44 22.5 54 24.5 Q52 32 45 31.5 Q39 31 36 28.5 Z" fill="#ff8c1f" opacity="0.45" />
-      <path d="M37.5 28.3 Q44 23.8 52.5 25.2 Q51 30.8 45 30.4 Q40 30 37.5 28.3 Z" fill="#ffb640" />
-      <path d="M44 24.8 L45.8 27.4 L44.6 30.4 L42.8 27.6 Z" fill="#331208" />
-      <circle cx="47.5" cy="26.3" r="1" fill="#fff3cc" opacity="0.9" />
+      <path d="M35 21.5 Q43 15.5 53 17.5 Q51 25 44 24.5 Q38 24 35 21.5 Z" fill="#ff8c1f" opacity="0.45" />
+      <path d="M36.5 21.3 Q43 16.8 51.5 18.2 Q50 23.8 44 23.4 Q39 23 36.5 21.3 Z" fill="#ffb640" />
+      <path d="M43 17.8 L44.8 20.4 L43.6 23.4 L41.8 20.6 Z" fill="#331208" />
+      <circle cx="46.5" cy="19.3" r="1" fill="#fff3cc" opacity="0.9" />
+    </g>
     </g>
     <g id="fire">
-      <g transform="translate(24 41) rotate(30)">
+      <g transform="translate(25 45) rotate(30)">
         <path d="M0 0 C -13 -11 -28 -16 -40 -13 C -35 -9 -36 -6 -45 -8 C -54 -9 -59 -4 -63 1 C -57 4 -53 8 -44 8 C -48 12 -44 15 -35 13 C -22 17 -10 10 0 0 Z" fill="#ff5f24" />
         <path d="M0 0 C -10 -8 -22 -11 -31 -9 C -27 -6 -28 -4 -36 -5 C -42 -5 -46 -2 -49 1 C -44 4 -40 5 -33 5 C -36 8 -33 10 -27 9 C -17 10 -8 6 0 0 Z" fill="#ff9d33" />
         <g id="fire-inner">
