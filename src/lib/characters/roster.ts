@@ -12,7 +12,14 @@ import { DRAGON } from './dragon.ts';
 import { KNIGHT } from './knight.ts';
 
 /** The cast, in the order alerts cycle through it. */
-export const CHARACTERS: readonly Character[] = [KNIGHT, DRAGON];
+export const CHARACTERS: readonly Character[] = [KNIGHT];
+
+/**
+ * Benched cast members: fully drawn, doc'd, and CSS-wired, but excluded from
+ * the rotation (the dragon awaits an art revisit). The guards in
+ * characters.test.ts still cover them so they can return without rot.
+ */
+export const BENCHED_CHARACTERS: readonly Character[] = [DRAGON];
 
 /**
  * Round-robin over the cast: `current` is who's up next (mounted at startup so

@@ -35,3 +35,4 @@ pnpm-debug.log*
 .env.*
 !.env.example
 *.token.json
+.claude/worktrees/

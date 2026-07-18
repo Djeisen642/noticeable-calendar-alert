@@ -120,9 +120,9 @@ body {
   transform-origin: 36px 97px;
 }
 
-/* The dragon's "arms" are its forelegs: fill-box shoulder pivots. */
+/* The dragon's resting arm has no sword: a plain fill-box shoulder pivot. */
 .character[data-character='dragon'] #arm-rest {
-  transform-origin: 60% 8%;
+  transform-origin: 60% 12%;
 }
 
 /* Pivot points. */
@@ -158,17 +158,17 @@ body {
    lib/characters/dragon.ts. */
 .character #wing-left {
   transform-box: view-box;
-  transform-origin: 62px 86px;
+  transform-origin: 52px 72px;
 }
 
 .character #wing-right {
   transform-box: view-box;
-  transform-origin: 84px 88px;
+  transform-origin: 86px 72px;
 }
 
 .character #tail {
   transform-box: view-box;
-  transform-origin: 98px 106px;
+  transform-origin: 86px 132px;
 }
 
 /* The dragon keeps both forelegs down: --arm-tuck collapses to 0 (its
@@ -180,7 +180,7 @@ body {
 }
 
 .character[data-character='dragon'] #arm-wave {
-  transform-origin: 45% 8%; /* the shoulder */
+  transform-origin: 10% 12%; /* the shoulder */
 }
 
 .character[data-character='dragon'][data-state='waving'] #arm-wave {
@@ -192,7 +192,7 @@ body {
    neck. Keep in sync with the neck base in lib/characters/dragon.ts. */
 .character[data-character='dragon'] #head {
   transform-box: view-box;
-  transform-origin: 70px 92px;
+  transform-origin: 74px 80px;
 }
 
 /* The fire scales/rotates around the mouth, pinned in viewBox coordinates
@@ -202,7 +202,7 @@ body {
    lib/characters/dragon.ts. */
 .character #fire {
   transform-box: view-box;
-  transform-origin: 27px 48px;
+  transform-origin: 25px 27px;
   opacity: 0;
 }
 

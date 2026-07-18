@@ -2,9 +2,12 @@ import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { CORE_PART_IDS, mountCharacter } from './character.ts';
 import { DRAGON } from './dragon.ts';
-import { CHARACTERS } from './roster.ts';
+import { BENCHED_CHARACTERS, CHARACTERS } from './roster.ts';
 
-describe.each(CHARACTERS.map((character) => [character.id, character] as const))(
+// Benched characters keep every guard: they must be ready to rejoin the cast.
+const ALL_CHARACTERS = [...CHARACTERS, ...BENCHED_CHARACTERS];
+
+describe.each(ALL_CHARACTERS.map((character) => [character.id, character] as const))(
   'character %s',
   (_id, character) => {
     it('defines every animatable part id exactly once', () => {
@@ -57,7 +60,7 @@ describe('styles.css part-id selectors', () => {
     // `#leg-left,` / `#cape {`; hex colors never match (a letter run in a hex
     // color is always followed by a hex digit or punctuation, not `\s,{`).
     const css = readFileSync(new URL('../../styles.css', import.meta.url), 'utf8');
-    const declared = new Set<string>(CHARACTERS.flatMap((character) => character.partIds));
+    const declared = new Set<string>(ALL_CHARACTERS.flatMap((character) => character.partIds));
     for (const [, id] of css.matchAll(/#([a-z][a-z-]*)(?=[\s,{])/g)) {
       expect(declared.has(id), `styles.css targets #${id}, declared by no character`).toBe(true);
     }
