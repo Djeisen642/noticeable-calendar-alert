@@ -108,8 +108,9 @@
     <path d="M52 40.5 Q58 36.5 64 39.5" stroke="#e6ebf4" stroke-width="4" stroke-linecap="round" fill="none" />
     <path d="M74 39.5 Q80 36.5 86 40.5" stroke="#e6ebf4" stroke-width="4" stroke-linecap="round" fill="none" />
     <g id="hat">
-      <path d="M50 32 Q57 10 67 -4 Q69 -7 73 -8 Q79 -9 81 -5 Q82 -2 78 -1 Q74 -1 72 3 Q68 12 74 24 Q77 29 80 32 Q66 27 50 32 Z" fill="url(#wizHat)" />
-      <path d="M56 26 Q61 12 68 0" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.35" />
+      <path d="M45 32 Q53 10 66 -4 Q69 -7 73 -8 Q79 -9 81 -5 Q82 -2 78 -1 Q74 -1 72 3 Q71 14 81 27 Q84 30 87 32 Q66 26 45 32 Z" fill="url(#wizHat)" />
+      <path d="M54 27 Q59 13 66 1" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.35" />
+      <path d="M67 8 Q70 16 76 24" stroke="#4a3e99" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4" />
       <path d="M66 10.3 L67.1 13.9 L70.7 15 L67.1 16.1 L66 19.7 L64.9 16.1 L61.3 15 L64.9 13.9 Z" fill="#f0c463" />
       <ellipse cx="69" cy="32" rx="33" ry="8.2" fill="url(#wizHat)" />
       <ellipse cx="69" cy="30.6" rx="29" ry="6.2" fill="#7d6bd6" opacity="0.5" />
