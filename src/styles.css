@@ -875,10 +875,10 @@ body {
   transform-box: fill-box;
 }
 
-/* Both wings are DRAWN folded at the side: --arm-tuck collapses to 0 (the
-   walking swing plays around the natural folded pose) and the shared wave
-   keyframes read as a wing-flutter salute around that same pose. Pivots sit
-   at the shoulders, the top of each wing panel. */
+/* Both wings are DRAWN folded at the side: --arm-tuck collapses to 0 so the
+   walking swing plays around the natural folded pose; the greeting replaces
+   the shared wave with the double-wing spread below. Pivots sit at the
+   shoulders, the top of each wing panel. */
 .character[data-character='owl'] {
   --arm-tuck: 0deg;
 }
@@ -888,9 +888,30 @@ body {
   transform-origin: 50% 6%;
 }
 
-/* The flutter should be quicker and tighter than the knight's big arm wave. */
+/* The greeting is a "ta-da": BOTH wings snap open into a raised V with a
+   springy overshoot and two small flaps at the apex, holding the spread (the
+   one-shot fills forwards) until presenting starts — then each wing eases
+   back to the folded pose through its transition. The tufts flare and the
+   letter lifts with the announcement. Must finish inside WAVE_HOLD_MS
+   (1400ms in animation.ts). */
+.character[data-character='owl'] #arm-rest {
+  transition: transform var(--arm-raise-duration) ease;
+}
+
+.character[data-character='owl'][data-state='waving'] #arm-rest {
+  animation: wing-spread-left 1300ms ease-out both;
+}
+
 .character[data-character='owl'][data-state='waving'] #arm-wave {
-  animation: wing-flutter 360ms ease-in-out var(--arm-raise-duration) infinite;
+  animation: wing-spread-right 1300ms ease-out both;
+}
+
+.character[data-character='owl'][data-state='waving'] #tufts {
+  animation: tuft-flare 1300ms ease-out both;
+}
+
+.character[data-character='owl'][data-state='waving'] #scroll {
+  animation: scroll-raise 1300ms ease-out both;
 }
 
 /* The ear tufts twitch from their base; the twitch itself lives in the
@@ -915,17 +936,82 @@ body {
   animation: scroll-bob 3200ms ease-in-out infinite;
 }
 
-/* A tight, fast oscillation around the folded pose — a salute, not a wave. */
-@keyframes wing-flutter {
-  0%,
-  100% {
+/* Both wings throw open into a raised V: a big overshoot past the pose,
+   then two diminishing flaps around the held spread. Mirrored per side. */
+@keyframes wing-spread-left {
+  0% {
     transform: rotate(0deg);
   }
-  30% {
-    transform: rotate(-22deg);
+  22% {
+    transform: rotate(140deg);
   }
-  70% {
-    transform: rotate(10deg);
+  36% {
+    transform: rotate(112deg);
+  }
+  52% {
+    transform: rotate(130deg);
+  }
+  68% {
+    transform: rotate(116deg);
+  }
+  84% {
+    transform: rotate(128deg);
+  }
+  100% {
+    transform: rotate(124deg);
+  }
+}
+
+@keyframes wing-spread-right {
+  0% {
+    transform: rotate(0deg);
+  }
+  22% {
+    transform: rotate(-140deg);
+  }
+  36% {
+    transform: rotate(-112deg);
+  }
+  52% {
+    transform: rotate(-130deg);
+  }
+  68% {
+    transform: rotate(-116deg);
+  }
+  84% {
+    transform: rotate(-128deg);
+  }
+  100% {
+    transform: rotate(-124deg);
+  }
+}
+
+/* The tufts perk outward (the group scales from its base) and the sealed
+   letter rises a touch, as if held up with the announcement. */
+@keyframes tuft-flare {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.14) translateY(-2.5px);
+  }
+  60% {
+    transform: scale(1.07) translateY(-1.5px);
+  }
+  100% {
+    transform: scale(1.1) translateY(-2px);
+  }
+}
+
+@keyframes scroll-raise {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  30% {
+    transform: translateY(-5px) rotate(3deg);
+  }
+  100% {
+    transform: translateY(-3px) rotate(2deg);
   }
 }
 
