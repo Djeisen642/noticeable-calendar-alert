@@ -45,7 +45,22 @@ import { CORE_PART_IDS, type Character } from './character.ts';
  */
 const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
   <!-- Ground shadow -->
-  <ellipse cx="72" cy="183" rx="40" ry="6" fill="#000000" opacity="0.16" />
+  <ellipse cx="84" cy="191" rx="48" ry="5" fill="#000000" opacity="0.16" />
+
+  <!-- Rock perch: low-poly slate outcrop. Drawn first so the tail sweeps and
+       the feet grip in FRONT of it. Static — it slides in with the character
+       (no part id, no animation). The dragon itself is lifted 18px by the
+       wrapper below so it stands on the ridge; the ridge dips under the feet
+       so the claws hang over the rock face. -->
+  <path d="M26 182 L36 162 L52 168 L68 159 L86 166 L104 157 L122 166 L140 176 L136 194 L34 193 Z" fill="#4d6390" stroke="#2c3a52" stroke-width="1.8" />
+  <path d="M36 162 L52 168 L44 193 L34 193 L26 182 Z" fill="#5d76a8" stroke="#2c3a52" stroke-width="1.1" />
+  <path d="M104 157 L122 166 L116 193 L78 193 L86 166 Z" fill="#415580" stroke="#2c3a52" stroke-width="1.1" />
+  <path d="M122 166 L140 176 L136 194 L116 193 Z" fill="#384a70" stroke="#2c3a52" stroke-width="1.1" />
+
+  <!-- Everything below rides 18px high so the dragon perches on the rock.
+       NOTE: the view-box-pinned pivots in styles.css (wings, tail, neck,
+       fire) are specified in FINAL coordinates, i.e. already minus 18. -->
+  <g transform="translate(0 -18)">
 
   <!-- Tail: long smooth taper sweeping the ground, curling up at the tip -->
   <g id="tail">
@@ -169,6 +184,7 @@ const DRAGON_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="h
         <circle cx="-50" cy="10" r="1.7" fill="#ff9d33" />
       </g>
     </g>
+  </g>
   </g>
 </svg>`;
 

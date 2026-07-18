@@ -158,17 +158,17 @@ body {
    lib/characters/dragon.ts. */
 .character #wing-left {
   transform-box: view-box;
-  transform-origin: 52px 90px;
+  transform-origin: 52px 72px;
 }
 
 .character #wing-right {
   transform-box: view-box;
-  transform-origin: 86px 90px;
+  transform-origin: 86px 72px;
 }
 
 .character #tail {
   transform-box: view-box;
-  transform-origin: 86px 150px;
+  transform-origin: 86px 132px;
 }
 
 /* The dragon keeps both forelegs down: --arm-tuck collapses to 0 (its
@@ -192,7 +192,7 @@ body {
    neck. Keep in sync with the neck base in lib/characters/dragon.ts. */
 .character[data-character='dragon'] #head {
   transform-box: view-box;
-  transform-origin: 74px 98px;
+  transform-origin: 74px 80px;
 }
 
 /* The fire scales/rotates around the mouth, pinned in viewBox coordinates
@@ -202,7 +202,7 @@ body {
    lib/characters/dragon.ts. */
 .character #fire {
   transform-box: view-box;
-  transform-origin: 25px 45px;
+  transform-origin: 25px 27px;
   opacity: 0;
 }
 
