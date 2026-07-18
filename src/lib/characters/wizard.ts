@@ -146,7 +146,7 @@ const WIZARD_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="h
       <path d="M54 27 Q59 13 66 1" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" fill="none" opacity="0.35" />
       <path d="M67 8 Q70 16 76 24" stroke="#4a3e99" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4" />
       <path d="M66 10.3 L67.1 13.9 L70.7 15 L67.1 16.1 L66 19.7 L64.9 16.1 L61.3 15 L64.9 13.9 Z" fill="#f0c463" />
-      <path d="M37 41 Q67 48.5 101 40 Q88 45.5 69 45.8 Q50 45.6 37 41 Z" fill="#4a3e99" />
+      <path d="M42 41 L96 41 Q86 45.6 69 46 Q52 45.6 42 41 Z" fill="#4a3e99" />
       <path d="M35 40 Q45 27.5 69 27 Q93 27.5 103 40 Q104 42.6 100 42 Q91 41.6 69 42 Q47 41.6 38 42 Q34 42.6 35 40 Z" fill="url(#wizHat)" />
       <path d="M42 36 Q55 29.5 69 29.4 Q83 29.5 96 36 Q83 32.6 69 32.6 Q55 32.6 42 36 Z" fill="#7d6bd6" opacity="0.5" />
     </g>
