@@ -129,18 +129,22 @@ const OWL_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http
     <g id="eyes">
       <circle cx="55" cy="54" r="11.5" fill="#ffb938" />
       <circle cx="55" cy="54" r="11.5" fill="none" stroke="#a86a14" stroke-width="1.6" />
-      <circle cx="56.5" cy="55.5" r="6" fill="#2b1c10" />
-      <circle cx="57.5" cy="51.5" r="2.4" fill="#ffffff" />
+      <circle cx="57" cy="52.5" r="6" fill="#2b1c10" />
+      <circle cx="59" cy="51" r="2.2" fill="#ffffff" />
       <circle cx="52.5" cy="57" r="1.1" fill="#ffffff" opacity="0.8" />
       <circle cx="83" cy="54" r="11.5" fill="#ffb938" />
       <circle cx="83" cy="54" r="11.5" fill="none" stroke="#a86a14" stroke-width="1.6" />
-      <circle cx="81.5" cy="55.5" r="6" fill="#2b1c10" />
-      <circle cx="85.5" cy="51.5" r="2.4" fill="#ffffff" />
+      <circle cx="81" cy="52.5" r="6" fill="#2b1c10" />
+      <circle cx="83" cy="51" r="2.2" fill="#ffffff" />
       <circle cx="80.5" cy="57" r="1.1" fill="#ffffff" opacity="0.8" />
     </g>
-    <!-- Angry brow slashes: outer-high to inner-low, cutting the eye tops -->
-    <path d="M43 44 L67 52" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
-    <path d="M95 44 L71 52" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
+    <!-- Angry flat-topped eyes: cream caps erase everything above the brow
+         chord (so no eyeball ever peeks over), then the brow slashes draw
+         along that edge — outer-high, inner-low -->
+    <path d="M42 40 L68 40 L67 53 L43.5 48.2 Z" fill="#f2e3c4" />
+    <path d="M96 40 L70 40 L71 53 L94.5 48.2 Z" fill="#f2e3c4" />
+    <path d="M44 47.5 L67 52.5" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
+    <path d="M94 47.5 L71 52.5" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
     <path d="M69 58.5 L60.5 66 L69 79.5 L77.5 66 Z" fill="url(#owlBeakFill)" />
     <path d="M69 58.5 L60.5 66 L69 79.5 L77.5 66 Z" fill="none" stroke="#a8641a" stroke-width="1.2" stroke-linejoin="round" />
     <path d="M69 58.5 L60.5 66 L69 68.5 L77.5 66 Z" fill="#f6c469" opacity="0.55" />
