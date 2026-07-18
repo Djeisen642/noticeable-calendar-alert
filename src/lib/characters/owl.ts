@@ -86,16 +86,13 @@ const OWL_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http
        inner group so the presenting bob (which animates #scroll's transform)
        can't erase it. -->
   <g id="scroll">
-    <g transform="rotate(-5 69 131.5)">
-      <rect x="48" y="124.5" width="42" height="14" rx="3" fill="#f7efdc" stroke="#d8c69c" stroke-width="1.2" />
-      <ellipse cx="48" cy="131.5" rx="4.6" ry="7.6" fill="#efe2c2" stroke="#d8c69c" stroke-width="1.2" />
-      <circle cx="48" cy="131.5" r="2.6" fill="#cbb488" />
-      <circle cx="48" cy="131.5" r="1.1" fill="#f7efdc" />
-      <ellipse cx="90" cy="131.5" rx="4.6" ry="7.6" fill="#efe2c2" stroke="#d8c69c" stroke-width="1.2" />
-      <circle cx="90" cy="131.5" r="2.6" fill="#cbb488" />
-      <circle cx="90" cy="131.5" r="1.1" fill="#f7efdc" />
-      <circle cx="69" cy="131.5" r="5" fill="#c23a50" />
-      <circle cx="69" cy="131.5" r="2.6" fill="#8c2438" />
+    <g transform="rotate(-6 69 130.5)">
+      <rect x="53" y="120" width="32" height="21" rx="2.5" fill="#f7efdc" stroke="#c9b183" stroke-width="1.3" />
+      <path d="M53.5 121.5 L69 132 L84.5 121.5" stroke="#c9b183" stroke-width="1.3" fill="none" />
+      <path d="M53.5 140 L64 132.5 M84.5 140 L74 132.5" stroke="#dfd0a8" stroke-width="1.1" fill="none" />
+      <circle cx="69" cy="131.5" r="3.6" fill="#c23a50" />
+      <circle cx="69" cy="131.5" r="1.8" fill="#8c2438" />
+      <circle cx="67.8" cy="130.3" r="0.9" fill="#e05a6d" opacity="0.9" />
     </g>
   </g>
 
