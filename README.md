@@ -1,7 +1,7 @@
 # Noticeable Calendar Alert
 
 <img align="right" src="docs/knight.svg" alt="The knight mascot, waving, with a greatsword planted at his side" width="140" height="190">
-<img align="right" src="docs/dragon.svg" alt="The crimson dragon mascot, glowering under swept-back gold horns, with scalloped wings and a coiled tail" width="140" height="190">
+<img align="right" src="docs/dragon.svg" alt="The crimson dragon mascot, roaring under swept-back horns and a jagged crest, with veined bat wings and a cream underbelly" width="140" height="190">
 
 An ultra-lightweight, open-source Windows **system-tray utility** that watches
 your Google Calendar and, right before a meeting starts, summons an
