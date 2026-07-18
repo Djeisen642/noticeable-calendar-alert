@@ -10,15 +10,19 @@
 
   <!-- Wings: bat wings with an elbow thumb-spike and dark vein lines; the
        near wing rises high, the far wing folds smaller behind the neck -->
+  <!-- The wings deliberately overflow the 140x190 canvas (the svg renders
+       with overflow: visible) into the overlay window's headroom — tips must
+       stay within ~16px of the canvas right edge and above-canvas space so
+       the window never clips them. -->
   <g id="wing-left">
-    <path d="M52 90 Q40 72 30 56 Q24 46 14 40 Q18 52 16 66 Q22 62 24 80 Q29 74 32 94 Q38 86 42 100 Q46 92 52 98 Z" fill="#b5342a" stroke="#3d1210" stroke-width="1.8" />
-    <path d="M30 58 L16 66 M30 58 L24 80 M30 58 L32 94 M30 58 L42 100" stroke="#8a1f1a" stroke-width="1.5" fill="none" />
-    <path d="M30 56 L25 47 L33 51 Z" fill="#9c2620" stroke="#3d1210" stroke-width="1.2" />
+    <path d="M52 90 Q40 56 22 18 Q14 32 14 54 Q20 52 16 78 Q24 72 22 96 Q30 86 36 104 Q44 94 52 98 Z" fill="#b5342a" stroke="#3d1210" stroke-width="1.8" />
+    <path d="M26 44 L14 54 M26 44 L16 78 M26 44 L22 96 M26 44 L36 104" stroke="#8a1f1a" stroke-width="1.5" fill="none" />
+    <path d="M27 40 L20 30 L30 34 Z" fill="#9c2620" stroke="#3d1210" stroke-width="1.2" />
   </g>
   <g id="wing-right">
-    <path d="M86 88 Q100 58 126 24 Q136 42 138 58 Q130 52 132 78 Q123 66 120 98 Q112 84 106 110 Q100 94 92 100 Z" fill="#c93a2f" stroke="#3d1210" stroke-width="1.8" />
-    <path d="M110 46 L138 58 M110 46 L132 78 M110 46 L120 98 M110 46 L106 110" stroke="#8a1f1a" stroke-width="1.6" fill="none" />
-    <path d="M108 44 L104 32 L114 38 Z" fill="#9c2620" stroke="#3d1210" stroke-width="1.2" />
+    <path d="M86 88 Q100 48 128 -4 Q140 16 146 34 Q136 30 140 62 Q128 52 126 88 Q114 74 108 106 Q100 92 92 100 Z" fill="#c93a2f" stroke="#3d1210" stroke-width="1.8" />
+    <path d="M106 40 L146 34 M106 40 L140 62 M106 40 L126 88 M106 40 L108 106" stroke="#8a1f1a" stroke-width="1.6" fill="none" />
+    <path d="M104 36 L98 24 L109 30 Z" fill="#9c2620" stroke="#3d1210" stroke-width="1.2" />
   </g>
 
   <!-- Legs: muscular haunches, red feet, cream claws -->
@@ -55,15 +59,17 @@
     <path d="M59 112 Q68 116 76 112 M58 124 Q68 128 77 124 M59 136 Q68 140 76 136" stroke="#d9c5a0" stroke-width="1.6" fill="none" />
   </g>
 
-  <!-- Greeting arm: drawn RAISED (same shoulder geometry as the knight so the
-       shared tuck/wave choreography fits); cream claws on the paw -->
+  <!-- Second foreleg. The dragon does NOT wave — styles.css zeroes its
+       --arm-tuck and suppresses the wave keyframes, so this arm hangs at
+       rest (swinging naturally with the stride) and the greeting is carried
+       by the fire blast instead. The #arm-wave id stays because it is part
+       of the core choreography contract. -->
   <g id="arm-wave">
-    <path d="M93 99 Q114 70 120 50" stroke="#3d1210" stroke-width="17" stroke-linecap="round" fill="none" />
-    <path d="M93 99 Q114 70 120 50" stroke="#d9453a" stroke-width="13.5" stroke-linecap="round" fill="none" />
-    <circle cx="121" cy="47" r="9.5" fill="#c93a2f" stroke="#3d1210" stroke-width="1.6" />
-    <path d="M113 41 L107 31 L117 35 Z" fill="#f5e9d0" stroke="#3d1210" stroke-width="1.1" />
-    <path d="M120 38 L119 27 L127 34 Z" fill="#f5e9d0" stroke="#3d1210" stroke-width="1.1" />
-    <path d="M127 42 L134 33 L131 44 Z" fill="#f5e9d0" stroke="#3d1210" stroke-width="1.1" />
+    <path d="M90 102 Q101 110 102 122" stroke="#3d1210" stroke-width="15" stroke-linecap="round" fill="none" />
+    <path d="M90 102 Q101 110 102 122" stroke="#d9453a" stroke-width="11.5" stroke-linecap="round" fill="none" />
+    <circle cx="102" cy="125" r="6.5" fill="#c93a2f" stroke="#3d1210" stroke-width="1.6" />
+    <path d="M106 128 L113 136 L104 134 Z" fill="#f5e9d0" stroke="#3d1210" stroke-width="1.1" />
+    <path d="M100 130 L101 139 L94 133 Z" fill="#f5e9d0" stroke="#3d1210" stroke-width="1.1" />
   </g>
 
   <!-- Head: thick S-curved neck with a smooth cream throat strip, carrying a

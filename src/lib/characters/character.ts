@@ -19,8 +19,11 @@
  * states depend on them:
  *   #leg-left / #leg-right — alternate stepping while walking
  *   #arm-rest             — the resting arm; sways gently while walking
- *   #arm-wave             — the greeting arm; drawn RAISED, tucked down while
- *                           walking, waved on arrival, lowered while presenting
+ *   #arm-wave             — the greeting arm. The knight draws it RAISED and
+ *                           CSS tucks it while walking and waves it on
+ *                           arrival; a character may instead express the
+ *                           greeting elsewhere (the dragon's fire blast) and
+ *                           keep this arm at rest via scoped CSS
  *   #body                 — breathes gently while presenting
  *   #head                 — subtle sway while presenting
  *   #eyes                 — periodic blink whenever the character is on stage

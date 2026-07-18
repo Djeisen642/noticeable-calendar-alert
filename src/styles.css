@@ -11,8 +11,9 @@
  *
  * Character choreography (states set by OverlayAnimator via data-state):
  *   walking    — legs step in counter-phase, arms swing, body bobs and tilts
- *   waving     — the greeting arm raises (transition) then waves (keyframes);
- *                the dragon also fires a one-shot breath blast here, while the
+ *   waving     — the greeting: the knight's arm raises (transition) then
+ *                waves (keyframes); the dragon skips the wave (its arm rests)
+ *                and instead fires a one-shot breath blast here, while the
  *                bubble is still hidden and can't be scorched
  *   presenting — arm lowers; the body breathes, the head sways, eyes blink;
  *                the dragon puffs a small flame (plus nostril smoke) on a slow
@@ -168,6 +169,22 @@ body {
 .character #tail {
   transform-box: view-box;
   transform-origin: 86px 150px;
+}
+
+/* The dragon keeps both forelegs down: --arm-tuck collapses to 0 (its
+   #arm-wave is DRAWN at rest, so the walking swing plays around the natural
+   hanging pose), the pivot moves to that pose's shoulder, and the wave
+   keyframes are suppressed — the dragon's greeting is the fire blast. */
+.character[data-character='dragon'] {
+  --arm-tuck: 0deg;
+}
+
+.character[data-character='dragon'] #arm-wave {
+  transform-origin: 10% 12%; /* the shoulder */
+}
+
+.character[data-character='dragon'][data-state='waving'] #arm-wave {
+  animation: none;
 }
 
 /* The dragon's whole neck lives in the head group: the sway pivot sits at
