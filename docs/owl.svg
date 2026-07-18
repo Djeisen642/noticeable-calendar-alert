@@ -65,6 +65,19 @@
     </g>
   </g>
 
+  <!-- Open-wing plumage: BIG fanned wings drawn already spread in the raised
+       V, four feather tips each, radiating from the shoulders. Hidden
+       (opacity 0) at rest; during the greeting they pop open while the
+       folded panels below tuck away — an owl unfolds, it doesn't lift. -->
+  <g id="wing-open-left">
+    <path d="M44 90 Q24 86 8 74 Q-2 64 -4 48 L8 56 Q4 42 10 30 L18 46 Q18 30 28 22 L30 44 Q34 32 42 30 L40 56 Q42 72 44 90 Z" fill="url(#owlWingFill)" />
+    <path d="M10 58 Q24 70 40 78 M20 44 Q28 60 40 70 M30 36 Q34 52 41 64" stroke="#4e2f1a" stroke-width="1.6" fill="none" opacity="0.5" />
+  </g>
+  <g id="wing-open-right">
+    <path d="M94 90 Q114 86 130 74 Q140 64 142 48 L130 56 Q134 42 128 30 L120 46 Q120 30 110 22 L108 44 Q104 32 96 30 L98 56 Q96 72 94 90 Z" fill="url(#owlWingFill)" />
+    <path d="M128 58 Q114 70 98 78 M118 44 Q110 60 98 70 M108 36 Q104 52 97 64" stroke="#4e2f1a" stroke-width="1.6" fill="none" opacity="0.5" />
+  </g>
+
   <!-- Folded wings, one panel per side, both drawn AT REST: styles.css zeroes
        --arm-tuck for the owl, so the greeting plays as a flutter around this
        pose. Feather notches scallop each wing tip. -->
