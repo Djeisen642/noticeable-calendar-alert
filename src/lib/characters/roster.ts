@@ -10,9 +10,11 @@
 import type { Character } from './character.ts';
 import { DRAGON } from './dragon.ts';
 import { KNIGHT } from './knight.ts';
+import { OWL } from './owl.ts';
+import { WIZARD } from './wizard.ts';
 
 /** The cast, in the order alerts cycle through it. */
-export const CHARACTERS: readonly Character[] = [KNIGHT];
+export const CHARACTERS: readonly Character[] = [KNIGHT, WIZARD, OWL];
 
 /**
  * Benched cast members: fully drawn, doc'd, and CSS-wired, but excluded from

@@ -746,6 +746,219 @@ body {
   border-left: 12px solid var(--bubble-bg);
 }
 
+/* ---------- Wizard ---------- */
+
+/* Wizard part pivots rotate/scale around their own geometry. */
+.character #hat,
+.character #beard,
+.character #orb {
+  transform-box: fill-box;
+}
+
+.character #hat {
+  transform-origin: 50% 92%; /* where the cone meets the brim */
+}
+
+.character #beard {
+  transform-origin: 50% 8%; /* the jawline */
+}
+
+.character #orb {
+  transform-origin: 50% 50%; /* pulse from the crystal's heart */
+}
+
+/* The wizard's staff arm pivots at the shoulder, pinned in viewBox
+   coordinates: the planted staff stretches the group's bounding box, so a
+   fill-box percentage origin would land on the staff instead of the joint.
+   Keep in sync with the shoulder position in lib/characters/wizard.ts. */
+.character[data-character='wizard'] #arm-rest {
+  transform-box: view-box;
+  transform-origin: 36px 97px;
+}
+
+/* The sparkle burst scales around the raised hand, pinned in viewBox
+   coordinates (its own bounding box is the star field, whose center isn't
+   the hand). Hidden until the greeting burst runs — and under
+   prefers-reduced-motion it simply stays hidden. Keep the origin in sync
+   with the raised hand in lib/characters/wizard.ts. */
+.character #sparkles {
+  transform-box: view-box;
+  transform-origin: 121px 47px;
+  opacity: 0;
+}
+
+/* Wizard life signs: the orb pulses and the hat/beard sway on stage. */
+.character.is-onstage #orb {
+  animation: orb-pulse 2600ms ease-in-out infinite;
+}
+
+.character.is-onstage #hat {
+  animation: hat-sway 3000ms ease-in-out infinite;
+}
+
+.character.is-onstage #beard {
+  animation: beard-sway 3400ms ease-in-out infinite;
+}
+
+/* The greeting spell: a one-shot star burst around the waving hand — the
+   bubble is still hidden during this state, so the burst can be big. The
+   duration must stay under WAVE_HOLD_MS (animation.ts) so it finishes on
+   stage. */
+.character[data-state='waving'] #sparkles {
+  animation: sparkle-burst 1100ms ease-out both;
+}
+
+@keyframes orb-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.16);
+  }
+}
+
+@keyframes hat-sway {
+  0%,
+  100% {
+    transform: rotate(-2.4deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes beard-sway {
+  0%,
+  100% {
+    transform: rotate(-1.4deg);
+  }
+  50% {
+    transform: rotate(1.8deg);
+  }
+}
+
+/* Swell out of the hand spinning slightly, hang glittering, wink out. */
+@keyframes sparkle-burst {
+  0% {
+    transform: scale(0.15) rotate(-30deg);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(0.9) rotate(-8deg);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(1.12) rotate(4deg);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.02) rotate(10deg);
+    opacity: 0.9;
+  }
+  80% {
+    transform: scale(1.14) rotate(16deg);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.3) rotate(22deg);
+    opacity: 0;
+  }
+}
+
+/* ---------- The owl ---------- */
+
+/* The owl's parts rotate/bob around their own geometry, same as the shared
+   part list at the top of this file. */
+.character #tufts,
+.character #scroll {
+  transform-box: fill-box;
+}
+
+/* Both wings are DRAWN folded at the side: --arm-tuck collapses to 0 (the
+   walking swing plays around the natural folded pose) and the shared wave
+   keyframes read as a wing-flutter salute around that same pose. Pivots sit
+   at the shoulders, the top of each wing panel. */
+.character[data-character='owl'] {
+  --arm-tuck: 0deg;
+}
+
+.character[data-character='owl'] #arm-rest,
+.character[data-character='owl'] #arm-wave {
+  transform-origin: 50% 6%;
+}
+
+/* The flutter should be quicker and tighter than the knight's big arm wave. */
+.character[data-character='owl'][data-state='waving'] #arm-wave {
+  animation: wing-flutter 360ms ease-in-out var(--arm-raise-duration) infinite;
+}
+
+/* The ear tufts twitch from their base; the twitch itself lives in the
+   keyframes' long quiet period. */
+.character #tufts {
+  transform-origin: 50% 100%;
+}
+
+/* Mostly still with a blink-quick double twitch — reads as the owl reacting
+   to a distant sound. */
+.character[data-character='owl'].is-onstage #tufts {
+  animation: tuft-twitch 5400ms linear infinite;
+}
+
+/* The scroll hugs the chest and bobs gently while presenting, as if the owl
+   is offering the message toward the bubble. */
+.character #scroll {
+  transform-origin: 50% 50%;
+}
+
+.character[data-state='presenting'] #scroll {
+  animation: scroll-bob 3200ms ease-in-out infinite;
+}
+
+/* A tight, fast oscillation around the folded pose — a salute, not a wave. */
+@keyframes wing-flutter {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(-22deg);
+  }
+  70% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes tuft-twitch {
+  0%,
+  86%,
+  96%,
+  100% {
+    transform: rotate(0deg);
+  }
+  88.5% {
+    transform: rotate(4deg);
+  }
+  91% {
+    transform: rotate(-2.5deg);
+  }
+  93.5% {
+    transform: rotate(1.5deg);
+  }
+}
+
+/* Rides the same 3200ms clock as `breathe` so the scroll rises with the
+   chest instead of fighting it. */
+@keyframes scroll-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(-1.5deg);
+  }
+}
+
 /* Respect users who ask the OS to minimize motion: no keyframe animation at
    all, and transitions collapse to (effectively) instant state changes. */
 @media (prefers-reduced-motion: reduce) {
