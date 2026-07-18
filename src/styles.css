@@ -907,15 +907,19 @@ body {
 .character #wing-open-right {
   transform-box: fill-box;
   opacity: 0;
-  transition: opacity 220ms ease;
+  transition:
+    opacity 200ms ease,
+    transform 280ms ease;
 }
 
 .character #wing-open-left {
   transform-origin: 96% 96%; /* the shoulder root */
+  transform: scale(0.3) rotate(30deg); /* pre-folded; the pop opens from here */
 }
 
 .character #wing-open-right {
   transform-origin: 4% 96%;
+  transform: scale(0.3) rotate(-30deg);
 }
 
 .character[data-character='owl'][data-state='waving'] #wing-open-left {
@@ -926,10 +930,14 @@ body {
   animation: wing-pop-right 1300ms ease-out both;
 }
 
-/* The folded panels tuck away while the plumage is out. */
-.character[data-character='owl'][data-state='waving'] #arm-rest,
+/* The folded panels launch the same outward arc the fans continue, fading
+   mid-swing so the unfold reads as ONE motion, not a swap. */
+.character[data-character='owl'][data-state='waving'] #arm-rest {
+  animation: wing-launch-left 1300ms ease-out both;
+}
+
 .character[data-character='owl'][data-state='waving'] #arm-wave {
-  animation: wing-tuck 1300ms ease-out both;
+  animation: wing-launch-right 1300ms ease-out both;
 }
 
 .character[data-character='owl'][data-state='waving'] #tufts {
@@ -965,9 +973,13 @@ body {
 /* The plumage snaps open from the shoulder — overshoot, two diminishing
    flaps, then held. Mirrored wobble per side. */
 @keyframes wing-pop-left {
-  0% {
-    transform: scale(0.2) rotate(30deg);
+  0%,
+  5% {
+    transform: scale(0.3) rotate(30deg);
     opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
   }
   16% {
     transform: scale(1.42) rotate(-19deg);
@@ -992,9 +1004,13 @@ body {
 }
 
 @keyframes wing-pop-right {
-  0% {
-    transform: scale(0.2) rotate(-30deg);
+  0%,
+  5% {
+    transform: scale(0.3) rotate(-30deg);
     opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
   }
   16% {
     transform: scale(1.42) rotate(19deg);
@@ -1018,15 +1034,36 @@ body {
   }
 }
 
-/* The folded panels shrink into the shoulders while the plumage is out. */
-@keyframes wing-tuck {
+/* The folded panels swing up-and-out (the first beats of the unfold arc)
+   and fade mid-motion as the fans overtake them. */
+@keyframes wing-launch-left {
   0% {
-    transform: scale(1);
+    transform: rotate(0deg);
     opacity: 1;
   }
-  14%,
+  6% {
+    transform: rotate(20deg);
+    opacity: 1;
+  }
+  18%,
   100% {
-    transform: scale(0.85);
+    transform: rotate(60deg);
+    opacity: 0;
+  }
+}
+
+@keyframes wing-launch-right {
+  0% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  6% {
+    transform: rotate(-20deg);
+    opacity: 1;
+  }
+  18%,
+  100% {
+    transform: rotate(-60deg);
     opacity: 0;
   }
 }
