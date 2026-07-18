@@ -1,49 +1,23 @@
 /**
- * The vector character — a valiant herald knight, gauntlet resting on the
- * pommel of a planted greatsword — as a single self-contained module.
+ * The knight — a valiant herald, gauntlet resting on the pommel of a planted
+ * greatsword.
  *
- * Keeping the SVG here (instead of inlined in `index.html`) gives the mascot
- * one obvious home: every animatable part has a stable id that `styles.css`
- * targets, and `character.test.ts` guards those ids (in both directions: the
- * SVG defines each exactly once, and every id selector in styles.css names a
- * declared part) so a redesign can't silently break the choreography.
+ * Knight-specific animatable parts (beyond the core contract in character.ts):
+ *   #plume — the helm's crimson plume; sways on stage
+ *   #cape  — the cape; billows softly whenever on stage
  *
- * Animatable parts (each id is a CSS animation hook — see styles.css):
- *   #leg-left / #leg-right — alternate stepping while walking
- *   #arm-rest             — the sword arm: gauntlet on the pommel of the
- *                           planted greatsword; sways gently while walking
- *   #arm-wave             — the greeting arm; tucked down while walking,
- *                           raised + waved on arrival, lowered while presenting
- *   #body                 — breathes gently while presenting
- *   #head                 — subtle sway while presenting
- *   #eyes                 — periodic blink whenever the character is on stage
- *   #plume                — the helm's crimson plume; sways on stage
- *   #cape                 — the cape; billows softly whenever on stage
- *
- * The README embeds the mascot from `docs/character.svg`. After editing
- * `CHARACTER_SVG`, regenerate that file (its content is `CHARACTER_SVG` plus a
- * trailing newline) — `character.test.ts` fails if the two drift apart.
+ * The README embeds this character from `docs/knight.svg`. After editing the
+ * SVG, regenerate that file (its content is `KNIGHT.svg` plus a trailing
+ * newline) — `characters.test.ts` fails if the two drift apart.
  */
 
-/** Every part id the CSS choreography depends on. */
-export const CHARACTER_PART_IDS = [
-  'cape',
-  'leg-left',
-  'leg-right',
-  'arm-rest',
-  'arm-wave',
-  'body',
-  'head',
-  'eyes',
-  'plume',
-] as const;
+import { CORE_PART_IDS, type Character } from './character.ts';
 
 /**
- * Static, trusted markup — no user or calendar data ever flows through here.
  * Draw order (back to front): shadow, cape, legs, sword arm + greatsword,
  * body, waving arm, head (plume drawn behind the helm).
  */
-export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
+const KNIGHT_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="armorFill" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#dbe3ee" />
@@ -171,13 +145,8 @@ export const CHARACTER_SVG = `<svg viewBox="0 0 140 190" width="140" height="190
   </g>
 </svg>`;
 
-/**
- * Inject the character into its host element.
- *
- * `innerHTML` is safe here because `CHARACTER_SVG` is a static compile-time
- * constant — untrusted calendar data is rendered elsewhere via `textContent`
- * only (see `OverlayAnimator.renderBubble`).
- */
-export function mountCharacter(host: HTMLElement): void {
-  host.innerHTML = CHARACTER_SVG;
-}
+export const KNIGHT: Character = {
+  id: 'knight',
+  partIds: [...CORE_PART_IDS, 'cape', 'plume'],
+  svg: KNIGHT_SVG,
+};

@@ -9,7 +9,8 @@
 
 import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
 import { selectNextEvent, type CalendarEvent, type CalendarSync } from './lib/calendar.ts';
-import { mountCharacter } from './lib/character.ts';
+import { mountCharacter } from './lib/characters/character.ts';
+import { createCharacterRotation, type CharacterRotation } from './lib/characters/roster.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, describeCountdown, type CountdownDelta } from './lib/countdown.ts';
 import { shouldPresent, isActiveEventStale } from './lib/alert.ts';
@@ -80,6 +81,8 @@ class AlertController {
   private readonly calendar: CalendarSync;
   private readonly animator: OverlayAnimator;
   private readonly elements: OverlayElements;
+  /** The rotating cast: each present/demo brings the next character on. */
+  private readonly rotation: CharacterRotation;
   private activeEventId: string | null = null;
   /** The last event the user dismissed, so we don't immediately re-present it. */
   private dismissedEventId: string | null = null;
@@ -103,10 +106,16 @@ class AlertController {
   /** Pending auto-dismiss timer for a "Test Overlay" preview, if any. */
   private demoTimer: number | undefined;
 
-  constructor(calendar: CalendarSync, animator: OverlayAnimator, elements: OverlayElements) {
+  constructor(
+    calendar: CalendarSync,
+    animator: OverlayAnimator,
+    elements: OverlayElements,
+    rotation: CharacterRotation,
+  ) {
     this.calendar = calendar;
     this.animator = animator;
     this.elements = elements;
+    this.rotation = rotation;
 
     this.elements.joinButton.addEventListener('click', () => {
       const url = this.elements.joinButton.dataset.url;
@@ -275,6 +284,8 @@ class AlertController {
     await this.runExclusive(async () => {
       if (this.activeEventId !== null) return; // a real alert owns the overlay
       presented = true;
+      // Rotate the cast while the stage is off screen, then run the entrance.
+      mountCharacter(this.elements.character, this.rotation.advance());
       await showOverlay();
       await setClickThrough(false);
       await this.animator.present(demoBubbleContent());
@@ -368,6 +379,8 @@ class AlertController {
 
   private async present(event: CalendarEvent, delta: CountdownDelta): Promise<void> {
     this.activeEventId = event.id;
+    // Rotate the cast while the stage is off screen, then run the entrance.
+    mountCharacter(this.elements.character, this.rotation.advance());
     await showOverlay();
     // Make the window interactive so the Join button is clickable.
     await setClickThrough(false);
@@ -402,12 +415,14 @@ class AlertController {
 
 function bootstrap(): void {
   const elements = resolveElements();
-  // Inject the character SVG (lib/character.ts is its single source of truth).
-  mountCharacter(elements.character);
+  // Mount whoever is first in the rotation so the stage is never empty; each
+  // alert then advances the cast (lib/characters/roster.ts owns the roster).
+  const rotation = createCharacterRotation();
+  mountCharacter(elements.character, rotation.current);
   const animator = new OverlayAnimator(elements);
   // Real GoogleCalendarSync when configured + in the desktop app; mock otherwise.
   const calendar = createCalendarSync();
-  const controller = new AlertController(calendar, animator, elements);
+  const controller = new AlertController(calendar, animator, elements, rotation);
 
   // The tray's single auth item toggles sign-in/out; sync its label to the
   // current state up front (e.g. "Sign out" when a token is already stored).

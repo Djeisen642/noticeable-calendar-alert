@@ -1,0 +1,157 @@
+/**
+ * The owl — a round, wide-eyed messenger clutching a sealed scroll (the
+ * meeting summons) against its chest. Deliberately geometry-friendly: a big
+ * circular head merged into an egg body, built almost entirely from circles,
+ * ellipses, and triangles, front-facing and symmetric.
+ *
+ * The core contract's two arms are the WINGS, both DRAWN folded at the side:
+ * styles.css zeroes --arm-tuck for the owl (like the dragon) so the walking
+ * swing plays around the natural folded pose, and the greeting keyframes read
+ * as a little wing-flutter salute instead of a raised-arm wave.
+ *
+ * Owl-specific animatable parts (beyond the core contract in character.ts):
+ *   #tufts  — the ear tufts; mostly still, then a quick adorable twitch
+ *   #scroll — the sealed message; bobs gently while presenting
+ *
+ * NOTE: styles.css pins both wing pivots at the shoulders in fill-box
+ * percentages and the scroll/tuft origins on their own boxes. If you move the
+ * shoulders or the scroll here, revisit the owl section in styles.css.
+ *
+ * The README embeds this character from `docs/owl.svg`. After editing the
+ * SVG, regenerate that file (its content is `OWL.svg` plus a trailing
+ * newline) — `characters.test.ts` fails if the two drift apart.
+ */
+
+import { CORE_PART_IDS, type Character } from './character.ts';
+
+/**
+ * Draw order (back to front): shadow, legs (talons peek under the body),
+ * body (egg + scalloped cream belly), scroll against the chest, folded wings
+ * (#arm-rest left, #arm-wave right — their tips overlap the scroll's ends so
+ * the owl visibly holds it), head (tufts behind the skull, facial disc,
+ * amber eyes, beak).
+ */
+const OWL_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="owlBodyFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a97245" />
+      <stop offset="1" stop-color="#835231" />
+    </linearGradient>
+    <linearGradient id="owlWingFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7c4d2a" />
+      <stop offset="1" stop-color="#5f3a20" />
+    </linearGradient>
+    <linearGradient id="owlBellyFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6e8cb" />
+      <stop offset="1" stop-color="#e6cfa4" />
+    </linearGradient>
+    <linearGradient id="owlBeakFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2ab41" />
+      <stop offset="1" stop-color="#cf8322" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ground shadow -->
+  <ellipse cx="69" cy="183" rx="29" ry="5.4" fill="#000000" opacity="0.16" />
+
+  <g transform="translate(10.35 26.55) scale(0.85)">
+
+  <!-- Stubby legs + three-toed talons, in the shared leg slots so the step
+       animation reads under the egg -->
+  <g id="leg-left">
+    <rect x="54" y="146" width="11" height="26" rx="5.5" fill="#8a5731" />
+    <ellipse cx="59" cy="172" rx="8.5" ry="5" fill="url(#owlBeakFill)" />
+    <path d="M52 172 L48 179 L56 177.5 Z" fill="#e09a30" />
+    <path d="M58 173.5 L57.5 181 L64 177.5 Z" fill="#d18e28" />
+    <path d="M64.5 172 L68 178.5 L60.5 177 Z" fill="#e09a30" />
+  </g>
+  <g id="leg-right">
+    <rect x="74" y="146" width="11" height="26" rx="5.5" fill="#7a4a29" />
+    <ellipse cx="80" cy="172" rx="8.5" ry="5" fill="url(#owlBeakFill)" />
+    <path d="M73 172 L69 179 L77 177.5 Z" fill="#d18e28" />
+    <path d="M79 173.5 L78.5 181 L85 177.5 Z" fill="#c08120" />
+    <path d="M85.5 172 L89 178.5 L81.5 177 Z" fill="#d18e28" />
+  </g>
+
+  <!-- Body: the egg, with a scalloped cream chest -->
+  <g id="body">
+    <ellipse cx="69" cy="114" rx="37" ry="44" fill="url(#owlBodyFill)" />
+    <ellipse cx="69" cy="120" rx="26" ry="33" fill="url(#owlBellyFill)" />
+    <!-- Feather scallops: three rows of little arches on the chest -->
+    <path d="M50 106 Q55 112 60 106 Q64 112 69 106 Q74 112 78 106 Q83 112 88 106" stroke="#d9bf92" stroke-width="2" fill="none" stroke-linecap="round" />
+    <path d="M48 120 Q53 126 58 120 Q63 126 69 120 Q75 126 80 120 Q85 126 90 120" stroke="#d9bf92" stroke-width="2" fill="none" stroke-linecap="round" />
+    <path d="M52 134 Q57 140 62 134 Q66 140 71 134 Q76 140 81 134" stroke="#d9bf92" stroke-width="2" fill="none" stroke-linecap="round" />
+  </g>
+
+  <!-- The message: a rolled scroll with a wax seal, hugged to the chest and
+       tucked under both wing tips (drawn before them). The tilt lives on an
+       inner group so the presenting bob (which animates #scroll's transform)
+       can't erase it. -->
+  <g id="scroll">
+    <g transform="rotate(-6 69 130.5)">
+      <rect x="53" y="120" width="32" height="21" rx="2.5" fill="#f7efdc" stroke="#c9b183" stroke-width="1.3" />
+      <path d="M53.5 121.5 L69 132 L84.5 121.5" stroke="#c9b183" stroke-width="1.3" fill="none" />
+      <path d="M53.5 140 L64 132.5 M84.5 140 L74 132.5" stroke="#dfd0a8" stroke-width="1.1" fill="none" />
+      <circle cx="69" cy="131.5" r="3.6" fill="#c23a50" />
+      <circle cx="69" cy="131.5" r="1.8" fill="#8c2438" />
+      <circle cx="67.8" cy="130.3" r="0.9" fill="#e05a6d" opacity="0.9" />
+    </g>
+  </g>
+
+  <!-- Folded wings, one panel per side, both drawn AT REST: styles.css zeroes
+       --arm-tuck for the owl, so the greeting plays as a flutter around this
+       pose. Feather notches scallop each wing tip. -->
+  <g id="arm-rest">
+    <path d="M40 84 Q28 96 30 122 Q31 142 42 152 L50 138 Q42 116 44 92 Z" fill="url(#owlWingFill)" />
+    <path d="M42 152 Q36 142 34 128 L30 146 Q34 152 42 152 Z" fill="#4e2f1a" opacity="0.5" />
+    <path d="M33 118 Q38 124 43 119 M32 130 Q37 137 42 131" stroke="#4e2f1a" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.55" />
+  </g>
+  <g id="arm-wave">
+    <path d="M98 84 Q110 96 108 122 Q107 142 96 152 L88 138 Q96 116 94 92 Z" fill="url(#owlWingFill)" />
+    <path d="M96 152 Q102 142 104 128 L108 146 Q104 152 96 152 Z" fill="#4e2f1a" opacity="0.5" />
+    <path d="M105 118 Q100 124 95 119 M106 130 Q101 137 96 131" stroke="#4e2f1a" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.55" />
+  </g>
+
+  <!-- Head: big circle merged into the egg, ear tufts behind the skull, a
+       heart-ish facial disc, huge amber eyes, triangle beak -->
+  <g id="head">
+    <g id="tufts">
+      <path d="M46 28 L34 6 L56 18 Z" fill="#835231" />
+      <path d="M46 28 L40 12 L52 20 Z" fill="#5f3a20" opacity="0.55" />
+      <path d="M92 28 L104 6 L82 18 Z" fill="#835231" />
+      <path d="M92 28 L98 12 L86 20 Z" fill="#5f3a20" opacity="0.55" />
+    </g>
+    <circle cx="69" cy="52" r="34" fill="url(#owlBodyFill)" />
+    <!-- Facial disc: two overlapping cream circles make the classic owl face -->
+    <circle cx="54" cy="54" r="17.5" fill="#f2e3c4" />
+    <circle cx="84" cy="54" r="17.5" fill="#f2e3c4" />
+    <ellipse cx="69" cy="66" rx="17" ry="10.5" fill="#f2e3c4" />
+    <g id="eyes">
+      <circle cx="55" cy="54" r="11.5" fill="#ffb938" />
+      <circle cx="55" cy="54" r="11.5" fill="none" stroke="#a86a14" stroke-width="1.6" />
+      <circle cx="57" cy="52.5" r="6" fill="#2b1c10" />
+            <circle cx="55" cy="54.5" r="1.7" fill="#ffffff" opacity="0.95" />
+      <circle cx="83" cy="54" r="11.5" fill="#ffb938" />
+      <circle cx="83" cy="54" r="11.5" fill="none" stroke="#a86a14" stroke-width="1.6" />
+      <circle cx="81" cy="52.5" r="6" fill="#2b1c10" />
+            <circle cx="83" cy="54.5" r="1.7" fill="#ffffff" opacity="0.95" />
+    </g>
+    <!-- Angry flat-topped eyes: cream caps erase everything above the brow
+         chord (so no eyeball ever peeks over), then the brow slashes draw
+         along that edge — outer-high, inner-low -->
+    <path d="M43.6 47.4 A13.2 13.2 0 0 1 68.1 52.8 Z" fill="#f2e3c4" />
+    <path d="M94.4 47.4 A13.2 13.2 0 0 0 69.9 52.8 Z" fill="#f2e3c4" />
+    <path d="M44 47.5 L67 52.5" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
+    <path d="M94 47.5 L71 52.5" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
+    <path d="M69 58.5 L60.5 66 L69 79.5 L77.5 66 Z" fill="url(#owlBeakFill)" />
+    <path d="M69 58.5 L60.5 66 L69 79.5 L77.5 66 Z" fill="none" stroke="#a8641a" stroke-width="1.2" stroke-linejoin="round" />
+    <path d="M69 58.5 L60.5 66 L69 68.5 L77.5 66 Z" fill="#f6c469" opacity="0.55" />
+  </g>
+  </g>
+</svg>`;
+
+export const OWL: Character = {
+  id: 'owl',
+  partIds: [...CORE_PART_IDS, 'tufts', 'scroll'],
+  svg: OWL_SVG,
+};

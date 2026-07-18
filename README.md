@@ -1,12 +1,15 @@
 # Noticeable Calendar Alert
 
-<img align="right" src="docs/character.svg" alt="The knight mascot, waving, with a greatsword planted at his side" width="140" height="190">
+<img align="right" src="docs/knight.svg" alt="The knight mascot, waving, with a greatsword planted at his side" width="140" height="190">
+<img align="right" src="docs/dragon.svg" alt="The crimson dragon mascot, roaring under swept-back horns and a jagged crest, with veined bat wings and a cream underbelly" width="140" height="190">
 
 An ultra-lightweight, open-source Windows **system-tray utility** that watches
 your Google Calendar and, right before a meeting starts, summons an
-**always-on-top** overlay: a vector **knight** marches in from the right edge
-of your screen, waves, and pops a speech bubble with the meeting title and a
-**Join Call** button. In the final minute he starts hopping while the countdown
+**always-on-top** overlay: a vector mascot — the cast rotates between a
+**knight** and a **fire-breathing dragon** — marches in from the right edge
+of your screen, waves (the dragon punctuates the greeting with a burst of
+flame), and pops a speech bubble with the meeting title and a **Join Call**
+button. In the final minute the character starts hopping while the countdown
 pulses red, so the alert gets harder to ignore exactly when it should.
 
 Built with **Tauri v2** + **Vanilla TypeScript + Vite** — no React, no UI
@@ -35,7 +38,7 @@ src/
     countdown.ts       # Pure meeting-countdown math + urgency levels (unit-tested)
     countdown.test.ts  # Vitest specs for the delta calculations
     calendar.ts        # Google Calendar sync interface + deterministic mock
-    character.ts       # The mascot SVG — named animatable parts (unit-tested)
+    characters/        # The mascot cast — contract, knight, dragon, rotation
     animation.ts       # OverlayAnimator (walk → wave → bubble → presenting)
     tauri.ts           # Optional bridge to the Tauri runtime (degrades in browser)
 src-tauri/
