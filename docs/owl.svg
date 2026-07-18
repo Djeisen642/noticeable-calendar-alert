@@ -19,7 +19,9 @@
   </defs>
 
   <!-- Ground shadow -->
-  <ellipse cx="69" cy="183" rx="34" ry="6" fill="#000000" opacity="0.16" />
+  <ellipse cx="69" cy="183" rx="29" ry="5.4" fill="#000000" opacity="0.16" />
+
+  <g transform="translate(10.35 26.55) scale(0.85)">
 
   <!-- Stubby legs + three-toed talons, in the shared leg slots so the step
        animation reads under the egg -->
@@ -91,22 +93,24 @@
     <circle cx="54" cy="54" r="17.5" fill="#f2e3c4" />
     <circle cx="84" cy="54" r="17.5" fill="#f2e3c4" />
     <ellipse cx="69" cy="66" rx="17" ry="10.5" fill="#f2e3c4" />
-    <!-- Brow ridge over the disc -->
-    <path d="M42 44 Q55 34 69 42 Q83 34 96 44" stroke="#5f3a20" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8" />
     <g id="eyes">
       <circle cx="55" cy="54" r="11.5" fill="#ffb938" />
       <circle cx="55" cy="54" r="11.5" fill="none" stroke="#a86a14" stroke-width="1.6" />
-      <circle cx="55" cy="55" r="6" fill="#2b1c10" />
+      <circle cx="56.5" cy="55.5" r="6" fill="#2b1c10" />
       <circle cx="57.5" cy="51.5" r="2.4" fill="#ffffff" />
       <circle cx="52.5" cy="57" r="1.1" fill="#ffffff" opacity="0.8" />
       <circle cx="83" cy="54" r="11.5" fill="#ffb938" />
       <circle cx="83" cy="54" r="11.5" fill="none" stroke="#a86a14" stroke-width="1.6" />
-      <circle cx="83" cy="55" r="6" fill="#2b1c10" />
+      <circle cx="81.5" cy="55.5" r="6" fill="#2b1c10" />
       <circle cx="85.5" cy="51.5" r="2.4" fill="#ffffff" />
       <circle cx="80.5" cy="57" r="1.1" fill="#ffffff" opacity="0.8" />
     </g>
+    <!-- Angry brow slashes: outer-high to inner-low, cutting the eye tops -->
+    <path d="M43 44 L67 52" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
+    <path d="M95 44 L71 52" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
     <path d="M69 58.5 L60.5 66 L69 79.5 L77.5 66 Z" fill="url(#owlBeakFill)" />
     <path d="M69 58.5 L60.5 66 L69 79.5 L77.5 66 Z" fill="none" stroke="#a8641a" stroke-width="1.2" stroke-linejoin="round" />
     <path d="M69 58.5 L60.5 66 L69 68.5 L77.5 66 Z" fill="#f6c469" opacity="0.55" />
+  </g>
   </g>
 </svg>
