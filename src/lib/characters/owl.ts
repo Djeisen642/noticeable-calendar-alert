@@ -141,8 +141,8 @@ const OWL_SVG = `<svg viewBox="0 0 140 190" width="140" height="190" xmlns="http
     <!-- Angry flat-topped eyes: cream caps erase everything above the brow
          chord (so no eyeball ever peeks over), then the brow slashes draw
          along that edge — outer-high, inner-low -->
-    <path d="M42 40 L68 40 L67 53 L43.5 48.2 Z" fill="#f2e3c4" />
-    <path d="M96 40 L70 40 L71 53 L94.5 48.2 Z" fill="#f2e3c4" />
+    <path d="M43.6 47.4 A13.2 13.2 0 0 1 68.1 52.8 Z" fill="#f2e3c4" />
+    <path d="M94.4 47.4 A13.2 13.2 0 0 0 69.9 52.8 Z" fill="#f2e3c4" />
     <path d="M44 47.5 L67 52.5" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
     <path d="M94 47.5 L71 52.5" stroke="#5f3a20" stroke-width="5" stroke-linecap="round" fill="none" />
     <path d="M69 58.5 L60.5 66 L69 79.5 L77.5 66 Z" fill="url(#owlBeakFill)" />
