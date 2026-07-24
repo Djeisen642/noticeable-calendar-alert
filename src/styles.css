@@ -801,11 +801,13 @@ body {
   outline-offset: 2px;
 }
 
-/* Overdue flash: a red halo pulsing behind the bubble via a pseudo-element so
-   the effect stays opacity-only (GPU-only rule) rather than animating
-   border-color/box-shadow directly. Sits behind the bubble's own (near-opaque)
-   background via z-index so only the ring bleeding past the edges is visible —
-   it never washes out the title/countdown/buttons on top. */
+/* Overdue flash: a red wash pulsing behind the bubble's content via a
+   pseudo-element so the effect stays opacity-only (GPU-only rule) rather than
+   animating border-color/box-shadow directly. It paints above .bubble's own
+   background but below the in-flow title/countdown/buttons (negative z-index
+   within the stacking context .bubble's own `z-index: 0` establishes), so the
+   whole card tints red on each pulse — including a slight bleed past the
+   edges from `inset: -6px` — while the text and buttons stay legible on top. */
 .bubble::after {
   content: '';
   position: absolute;

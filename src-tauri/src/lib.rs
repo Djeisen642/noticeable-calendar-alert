@@ -197,6 +197,12 @@ fn position_overlay_right(window: &WebviewWindow) {
 }
 
 /// Pick the connected monitor with the greatest pixel area (width × height).
+///
+/// On a tie (e.g. two identical monitors), `max_by_key` returns the *last*
+/// maximal element, so which one wins depends on OS enumeration order — not
+/// guaranteed stable across launches. Harmless in practice since "largest" is
+/// ambiguous anyway when sizes match, but worth knowing if the overlay ever
+/// seems to swap sides on an identical dual-monitor setup.
 fn largest_monitor(window: &WebviewWindow) -> Option<tauri::Monitor> {
     let monitors = window.available_monitors().ok()?;
     monitors.into_iter().max_by_key(|monitor| {
