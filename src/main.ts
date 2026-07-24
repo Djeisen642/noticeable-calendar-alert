@@ -13,7 +13,7 @@ import { mountCharacter } from './lib/characters/character.ts';
 import { createCharacterRotation, type CharacterRotation } from './lib/characters/roster.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, describeCountdown, type CountdownDelta } from './lib/countdown.ts';
-import { shouldPresent, isActiveEventStale } from './lib/alert.ts';
+import { shouldPresent, isActiveEventStale, shouldAutoDismiss } from './lib/alert.ts';
 import { demoBubbleContent } from './lib/demo.ts';
 import { nextFetchDelayMs } from './lib/poll.ts';
 import { authMenuLabel, authToggleAction, formatTrayStatus, type SyncState } from './lib/tray.ts';
@@ -39,6 +39,13 @@ import {
  * overlay open already escalated, skipping the calm phase entirely.
  */
 const LEAD_TIME_MINUTES = 5;
+/**
+ * How long the overlay keeps nagging past a meeting's start time before it
+ * auto-dismisses, if the user hasn't clicked Join or Dismiss. Without this,
+ * `tick()` used to tear the overlay down the instant the countdown crossed
+ * zero — often before anyone had a chance to react.
+ */
+const AUTO_DISMISS_GRACE_MINUTES = 2;
 /**
  * How far ahead to fetch events. This is deliberately *much* wider than the
  * alert lead: `this.next` feeds both the tray "next meeting" line and the
@@ -70,6 +77,7 @@ function resolveElements(): OverlayElements {
     title: mustGet('bubble-title'),
     time: mustGet('bubble-time'),
     joinButton: mustGet<HTMLButtonElement>('join-button'),
+    dismissButton: mustGet<HTMLButtonElement>('dismiss-button'),
   };
 }
 
@@ -120,6 +128,10 @@ class AlertController {
     this.elements.joinButton.addEventListener('click', () => {
       const url = this.elements.joinButton.dataset.url;
       if (url) void openExternal(url);
+      void this.runExclusive(() => this.dismiss());
+    });
+
+    this.elements.dismissButton.addEventListener('click', () => {
       void this.runExclusive(() => this.dismiss());
     });
   }
@@ -349,9 +361,11 @@ class AlertController {
       const delta = getCountdownDelta(next.start, now);
 
       if (this.activeEventId === next.id) {
-        // Already showing this meeting — just keep the countdown fresh.
+        // Already showing this meeting — just keep the countdown fresh. It
+        // stays up through the meeting's start (escalating to "overdue") and
+        // only auto-dismisses once the grace period has elapsed unanswered.
         this.animator.updateCountdown(describeCountdown(delta));
-        if (delta.isPast) await this.dismiss();
+        if (shouldAutoDismiss(delta, AUTO_DISMISS_GRACE_MINUTES)) await this.dismiss();
         return;
       }
 

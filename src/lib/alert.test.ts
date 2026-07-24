@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { shouldPresent, isActiveEventStale, type AlertState } from './alert.ts';
+import { shouldPresent, isActiveEventStale, shouldAutoDismiss, type AlertState } from './alert.ts';
 import type { CalendarEvent } from './calendar.ts';
+import { getCountdownDelta } from './countdown.ts';
 
 const NOW = new Date('2026-06-26T09:00:00.000Z');
 
@@ -66,5 +67,35 @@ describe('isActiveEventStale', () => {
 
   it('is stale when next has gone null while an event is still on screen', () => {
     expect(isActiveEventStale('a', null)).toBe(true);
+  });
+});
+
+describe('shouldAutoDismiss', () => {
+  const minutesFromNow = (m: number): Date => new Date(NOW.getTime() + m * 60_000);
+  const delta = (minutesFromNowValue: number) =>
+    getCountdownDelta(minutesFromNow(minutesFromNowValue), NOW);
+
+  it('does not dismiss an upcoming meeting', () => {
+    expect(shouldAutoDismiss(delta(3), 2)).toBe(false);
+  });
+
+  it('does not dismiss the instant a meeting starts', () => {
+    expect(shouldAutoDismiss(delta(0), 2)).toBe(false);
+  });
+
+  it('does not dismiss before the grace period elapses', () => {
+    expect(shouldAutoDismiss(delta(-1), 2)).toBe(false);
+  });
+
+  it('dismisses exactly at the grace period boundary (inclusive)', () => {
+    expect(shouldAutoDismiss(delta(-2), 2)).toBe(true);
+  });
+
+  it('dismisses well past the grace period', () => {
+    expect(shouldAutoDismiss(delta(-5), 2)).toBe(true);
+  });
+
+  it('rejects a negative grace period', () => {
+    expect(() => shouldAutoDismiss(delta(-5), -1)).toThrow(RangeError);
   });
 });

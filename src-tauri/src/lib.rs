@@ -156,7 +156,8 @@ pub fn run() {
 
             // --- Overlay window ------------------------------------------------
             // The window is declared (hidden) in tauri.conf.json. Park it on the
-            // right edge of the primary monitor and start in click-through mode.
+            // right edge of the largest connected monitor and start in
+            // click-through mode.
             if let Some(overlay) = app.get_webview_window("overlay") {
                 position_overlay_right(&overlay);
                 let _ = overlay.set_ignore_cursor_events(true);
@@ -168,18 +169,44 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
-/// Anchor the overlay against the right edge of its current monitor.
+/// Anchor the overlay against the right edge of the largest connected
+/// monitor (by pixel area), not just whichever one the window happens to
+/// report as "current" — on a fresh launch that's an arbitrary primary
+/// display, which on a multi-monitor setup is often the smaller one.
 fn position_overlay_right(window: &WebviewWindow) {
-    let Ok(Some(monitor)) = window.current_monitor() else {
-        return;
-    };
     let Ok(size) = window.outer_size() else {
         return;
     };
 
-    let screen = monitor.size();
-    let x = (screen.width as i32 - size.width as i32).max(0);
-    let y = (screen.height as i32 - size.height as i32).max(0);
+    // Fall back to `current_monitor` if enumeration fails or reports nothing,
+    // rather than leaving the window wherever it was created.
+    let monitor = largest_monitor(window).or_else(|| window.current_monitor().ok().flatten());
+    let Some(monitor) = monitor else {
+        return;
+    };
+
+    let screen_pos = monitor.position();
+    let screen_size = monitor.size();
+    // Offset by the monitor's own origin, not just its size — monitors to the
+    // left of or above the primary display sit at negative/nonzero
+    // coordinates, and ignoring that would misplace the overlay off-screen.
+    let x = screen_pos.x + (screen_size.width as i32 - size.width as i32).max(0);
+    let y = screen_pos.y + (screen_size.height as i32 - size.height as i32).max(0);
 
     let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+}
+
+/// Pick the connected monitor with the greatest pixel area (width × height).
+///
+/// On a tie (e.g. two identical monitors), `max_by_key` returns the *last*
+/// maximal element, so which one wins depends on OS enumeration order — not
+/// guaranteed stable across launches. Harmless in practice since "largest" is
+/// ambiguous anyway when sizes match, but worth knowing if the overlay ever
+/// seems to swap sides on an identical dual-monitor setup.
+fn largest_monitor(window: &WebviewWindow) -> Option<tauri::Monitor> {
+    let monitors = window.available_monitors().ok()?;
+    monitors.into_iter().max_by_key(|monitor| {
+        let size = monitor.size();
+        u64::from(size.width) * u64::from(size.height)
+    })
 }

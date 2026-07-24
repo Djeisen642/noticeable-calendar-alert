@@ -39,24 +39,29 @@ export function getCountdownDelta(start: Date, now: Date = new Date()): Countdow
 
 /**
  * How urgently the overlay should behave while it is up. Drives the character
- * (calm presenting → excited hopping) and the countdown text color via
- * `data-urgency` attributes — see `OverlayAnimator` and styles.css.
+ * (calm presenting → excited hopping → shaking) and the countdown text color
+ * via `data-urgency` attributes — see `OverlayAnimator` and styles.css.
  */
-export type Urgency = 'calm' | 'soon' | 'now';
+export type Urgency = 'calm' | 'soon' | 'now' | 'overdue';
 
 /** At or under this remaining time the alert escalates to `'soon'`. */
 export const SOON_THRESHOLD_MS = 3 * MS_PER_MINUTE;
-/** At or under this remaining time (or once past) it escalates to `'now'`. */
+/** At or under this remaining time it escalates to `'now'`. */
 export const NOW_THRESHOLD_MS = MS_PER_MINUTE;
 
 /**
  * Classify a countdown delta into an urgency level.
  *
  * @example
- * countdownUrgency(getCountdownDelta(start, now)); // 'calm' | 'soon' | 'now'
+ * countdownUrgency(getCountdownDelta(start, now)); // 'calm' | 'soon' | 'now' | 'overdue'
  */
 export function countdownUrgency(delta: CountdownDelta): Urgency {
-  if (delta.isPast || delta.totalMs <= NOW_THRESHOLD_MS) {
+  if (delta.isPast) {
+    // The meeting has actually started and the user hasn't acted — this is
+    // the most alarming state, distinct from the final minute of lead-up.
+    return 'overdue';
+  }
+  if (delta.totalMs <= NOW_THRESHOLD_MS) {
     return 'now';
   }
   if (delta.totalMs <= SOON_THRESHOLD_MS) {
