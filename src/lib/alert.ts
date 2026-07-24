@@ -4,7 +4,8 @@
  */
 
 import type { CalendarEvent } from './calendar.ts';
-import { shouldAlert } from './countdown.ts';
+import { shouldAlert, type CountdownDelta } from './countdown.ts';
+import { MS_PER_MINUTE } from './time.ts';
 
 export interface AlertState {
   /** The event currently on screen, if any. */
@@ -51,4 +52,21 @@ export function shouldPresent(
     return false; // the user already handled this one
   }
   return shouldAlert(event.start, now, leadTimeMinutes);
+}
+
+/**
+ * Whether an overlay that's already showing should auto-dismiss because the
+ * meeting started `graceMinutes` ago (or more) and the user still hasn't
+ * clicked Join or Dismiss.
+ *
+ * Before this grace period elapses, a past-start delta must NOT trigger a
+ * dismiss — the whole point is that the overlay keeps nagging through the
+ * meeting's first couple of minutes instead of vanishing the instant it
+ * starts.
+ */
+export function shouldAutoDismiss(delta: CountdownDelta, graceMinutes: number): boolean {
+  if (graceMinutes < 0) {
+    throw new RangeError('graceMinutes must be non-negative');
+  }
+  return delta.totalMs <= -(graceMinutes * MS_PER_MINUTE);
 }

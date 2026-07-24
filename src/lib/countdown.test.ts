@@ -86,9 +86,9 @@ describe('countdownUrgency', () => {
     expect(countdownUrgency(getCountdownDelta(atMs(NOW_THRESHOLD_MS + 1), NOW))).toBe('soon');
   });
 
-  it('stays at now once the meeting has started', () => {
-    expect(countdownUrgency(getCountdownDelta(NOW, NOW))).toBe('now');
-    expect(countdownUrgency(getCountdownDelta(minutesFromNow(-3), NOW))).toBe('now');
+  it('escalates to overdue once the meeting has started', () => {
+    expect(countdownUrgency(getCountdownDelta(NOW, NOW))).toBe('overdue');
+    expect(countdownUrgency(getCountdownDelta(minutesFromNow(-3), NOW))).toBe('overdue');
   });
 });
 

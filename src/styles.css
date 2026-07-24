@@ -19,7 +19,11 @@
  *                the dragon puffs a small flame (plus nostril smoke) on a slow
  *                loop, angled up so it clears the speech bubble
  * Urgency (data-urgency on the stage, from countdownUrgency): 'now' makes the
- * character hop and the countdown text pulse red; 'soon' turns it amber.
+ * character hop and the countdown text pulse red; 'soon' turns it amber;
+ * 'overdue' (the meeting has actually started, up to AUTO_DISMISS_GRACE_MINUTES
+ * in main.ts) escalates further — the character shakes and the bubble flashes
+ * red — since the calm/soon/now ramp alone wasn't attention-grabbing enough
+ * once a meeting had actually started underneath it.
  * The cast rotates per alert; character-specific rules are scoped via
  * [data-character] where shared ids need different pivots. Ids unique to one
  * character (#cape, #wing-left, …) are simply inert for the others. The
@@ -636,6 +640,26 @@ body {
   }
 }
 
+/* Overdue: the meeting has actually started. 'now' and 'overdue' are mutually
+   exclusive data-urgency values, so this can safely replace the hop with a
+   more alarmed shake on the same element instead of fighting it. */
+.stage[data-urgency='overdue'] .character[data-state='presenting'] svg {
+  animation: shake 400ms ease-in-out infinite;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
 /* ---------- Speech bubble ---------- */
 
 .bubble {
@@ -650,6 +674,10 @@ body {
   border: 1px solid rgba(91, 141, 239, 0.25);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  /* Own stacking context so ::after's negative z-index (the overdue flash
+     halo) stays pinned behind this bubble's opaque background instead of
+     escaping to sit behind the whole stage. */
+  z-index: 0;
   /* The bubble is the one interactive surface. */
   pointer-events: auto;
   /* Fade + lift in. */
@@ -695,6 +723,12 @@ body {
   animation: countdown-pulse 1000ms ease-in-out infinite;
 }
 
+.stage[data-urgency='overdue'] .bubble__time {
+  color: var(--urgency-now);
+  font-weight: 700;
+  animation: countdown-pulse 550ms ease-in-out infinite;
+}
+
 @keyframes countdown-pulse {
   0%,
   100% {
@@ -732,6 +766,69 @@ body {
 .bubble__join:focus-visible {
   outline: 2px solid var(--accent-strong);
   outline-offset: 2px;
+}
+
+.bubble__dismiss {
+  display: inline-block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 14px;
+  border: 1px solid rgba(31, 35, 48, 0.14);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bubble-fg);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.75;
+  /* Only the lift/opacity are transitioned (GPU-only rule). */
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.bubble__dismiss:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.bubble__dismiss:active {
+  transform: translateY(0);
+}
+
+.bubble__dismiss:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+
+/* Overdue flash: a red halo pulsing behind the bubble via a pseudo-element so
+   the effect stays opacity-only (GPU-only rule) rather than animating
+   border-color/box-shadow directly. Sits behind the bubble's own (near-opaque)
+   background via z-index so only the ring bleeding past the edges is visible —
+   it never washes out the title/countdown/buttons on top. */
+.bubble::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 20px;
+  background: var(--urgency-now);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stage[data-urgency='overdue'] .bubble::after {
+  animation: bubble-alarm-flash 700ms ease-in-out infinite;
+}
+
+@keyframes bubble-alarm-flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.32;
+  }
 }
 
 /* Little tail pointing toward the character. */
@@ -1134,6 +1231,7 @@ body {
   .character svg,
   .character svg *,
   .bubble,
+  .bubble::after,
   .bubble * {
     transition-duration: 1ms !important;
     animation: none !important;

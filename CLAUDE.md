@@ -155,9 +155,11 @@ trusting them:
   There is no committed `Cargo.lock` yet (cargo has never run); add one once it
   has, and switch CI to `--locked`.
 - **The transparent, click-through, always-on-top window actually behaving that
-  way on Windows** — including focus-stealing and right-edge positioning across
-  multi-monitor / taskbar setups (`position_overlay_right` currently assumes a
-  single monitor at origin 0,0).
+  way on Windows** — including focus-stealing and right-edge positioning on a
+  multi-monitor setup. `position_overlay_right` now picks the largest connected
+  monitor (by pixel area) and accounts for its origin, not just its size, but
+  this logic is untested against real hardware/`cargo check` (see "Known
+  follow-ups" for the taskbar gap that remains).
 - **`invoke('set_click_through')` succeeding under the strict CSP** — confirm
   the IPC `connect-src` (`ipc:` / `http://ipc.localhost`) is sufficient and that
   app-defined commands don't need a capability entry (they should not in v2).
@@ -179,6 +181,9 @@ reviewed-but-unrun, and list what the user must check on-device.
 - Commit a `Cargo.lock`; generate `icon.ico`/`icon.icns` from the committed
   icon set (`npm run tauri icon src-tauri/icons/icon.png`) and add them back to
   `bundle.icon` for release bundling.
-- Multi-monitor-aware overlay positioning (account for monitor origin + taskbar).
+- Multi-monitor overlay positioning now targets the largest monitor and
+  accounts for its origin (`src-tauri/src/lib.rs`, reviewed-but-unrun — no
+  Rust toolchain in this sandbox); taskbar-aware placement (avoiding the work
+  area reserved by the OS taskbar) is still not done.
 - Optional: coverage thresholds; `cargo clippy`/`cargo fmt` gates once a Rust
   toolchain is available to validate them locally.

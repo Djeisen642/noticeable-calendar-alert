@@ -24,6 +24,7 @@ export interface OverlayElements {
   readonly title: HTMLElement;
   readonly time: HTMLElement;
   readonly joinButton: HTMLButtonElement;
+  readonly dismissButton: HTMLButtonElement;
 }
 
 /** Content rendered into the speech bubble. */
