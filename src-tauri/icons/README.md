@@ -34,18 +34,28 @@ come out blank below ~200px windows, and a pure-vertical line has a
 zero-width bounding box which disables `objectBoundingBox` gradient strokes —
 `icon.svg` uses solid fills where that matters.
 
-## Before a release
+## Regenerating `icon.ico` / `icon.icns`
 
-Generate the remaining platform formats from the 1024×1024 `icon.png`:
+`icon.ico` (Windows) and `icon.icns` (macOS) are committed and already listed
+in `tauri.conf.json`'s `bundle.icon`, so a normal `npm run tauri build` picks
+them up — no pre-release step needed.
+
+To regenerate them after the SVG masters change:
 
 ```bash
 npm run tauri icon src-tauri/icons/icon.png
 ```
 
-That produces `icon.ico` (Windows) and `icon.icns` (macOS). **Add
-`icons/icon.ico` and `icons/icon.icns` back into the `bundle.icon` array**
-in `tauri.conf.json` before building Windows/macOS installers — they are
-omitted from the committed config because those binaries aren't checked in.
+This command rasterizes **every** platform format (including Android/iOS/
+Windows Store assets this desktop-only app doesn't ship) from the single
+1024×1024 source, overwriting the hand-tuned `32x32.png`/`128x128.png`/
+`128x128@2x.png`/`icon.png` in the process. After running it:
+
+1. `git checkout -- icons/32x32.png icons/128x128.png icons/128x128@2x.png icons/icon.png`
+   to restore the hand-tuned PNGs (see note below).
+2. Delete the unused generated assets (`64x64.png`, `Square*.png`,
+   `StoreLogo.png`, `android/`, `ios/`).
+3. Keep only the regenerated `icon.ico` and `icon.icns`.
 
 Note that `tauri icon` derives every `.ico` sub-size from the one detailed
 source, so the small entries inside it won't get the hand-tuned art. For a
