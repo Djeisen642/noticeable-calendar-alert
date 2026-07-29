@@ -178,9 +178,7 @@ reviewed-but-unrun, and list what the user must check on-device.
 
 - Verify the Google OAuth native path on a real machine (logic is tested; the
   loopback/keychain/http-plugin adapters are reviewed-but-unrun).
-- Commit a `Cargo.lock`; generate `icon.ico`/`icon.icns` from the committed
-  icon set (`npm run tauri icon src-tauri/icons/icon.png`) and add them back to
-  `bundle.icon` for release bundling.
+- Commit a `Cargo.lock`.
 - Multi-monitor overlay positioning now targets the largest monitor and
   accounts for its origin (`src-tauri/src/lib.rs`, reviewed-but-unrun — no
   Rust toolchain in this sandbox); taskbar-aware placement (avoiding the work
