@@ -6,7 +6,7 @@
  * separate from `main.ts` so the content is unit-testable.
  */
 
-import type { BubbleContent } from './animation.ts';
+import type { MeetingBubbleContent } from './animation.ts';
 import { describeCountdown, getCountdownDelta } from './countdown.ts';
 import { MS_PER_MINUTE } from './time.ts';
 
@@ -26,9 +26,10 @@ export const DEMO_LEAD_MINUTES = 5;
  *
  * @param now - Reference time; pass an explicit value in tests for determinism.
  */
-export function demoBubbleContent(now: Date = new Date()): BubbleContent {
+export function demoBubbleContent(now: Date = new Date()): MeetingBubbleContent {
   const start = new Date(now.getTime() + DEMO_LEAD_MINUTES * MS_PER_MINUTE);
   return {
+    kind: 'meeting',
     title: DEMO_TITLE,
     joinUrl: DEMO_JOIN_URL,
     ...describeCountdown(getCountdownDelta(start, now)),

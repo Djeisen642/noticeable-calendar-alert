@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { shouldPresent, isActiveEventStale, shouldAutoDismiss, type AlertState } from './alert.ts';
+import {
+  shouldPresent,
+  isActiveEventStale,
+  shouldAutoDismiss,
+  isConnectionLapse,
+  type AlertState,
+} from './alert.ts';
 import type { CalendarEvent } from './calendar.ts';
 import { getCountdownDelta } from './countdown.ts';
 
@@ -97,5 +103,23 @@ describe('shouldAutoDismiss', () => {
 
   it('rejects a negative grace period', () => {
     expect(() => shouldAutoDismiss(delta(-5), -1)).toThrow(RangeError);
+  });
+});
+
+describe('isConnectionLapse', () => {
+  it('is a lapse when a signed-in session silently drops', () => {
+    expect(isConnectionLapse(true, false)).toBe(true);
+  });
+
+  it('is not a lapse when the user was never signed in', () => {
+    expect(isConnectionLapse(false, false)).toBe(false);
+  });
+
+  it('is not a lapse while still signed in', () => {
+    expect(isConnectionLapse(true, true)).toBe(false);
+  });
+
+  it('is not a lapse for a signed-out-to-signed-in transition', () => {
+    expect(isConnectionLapse(false, true)).toBe(false);
   });
 });

@@ -27,11 +27,27 @@ export interface OverlayElements {
   readonly dismissButton: HTMLButtonElement;
 }
 
-/** Content rendered into the speech bubble. */
-export interface BubbleContent extends CountdownDisplay {
+/** Content rendered into the speech bubble for an upcoming/active meeting. */
+export interface MeetingBubbleContent extends CountdownDisplay {
+  readonly kind: 'meeting';
   readonly title: string;
   readonly joinUrl: string | null;
 }
+
+/**
+ * Content rendered into the speech bubble when a previously-working Google
+ * Calendar connection has silently lapsed (e.g. a revoked/expired refresh
+ * token) and needs a fresh interactive sign-in. Reuses the same walk-in/wave
+ * entrance as a meeting alert so a dead connection can't go unnoticed until a
+ * meeting is actually missed.
+ */
+export interface ReconnectBubbleContent {
+  readonly kind: 'reconnect';
+  readonly title: string;
+  readonly message: string;
+}
+
+export type BubbleContent = MeetingBubbleContent | ReconnectBubbleContent;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -130,6 +146,22 @@ export class OverlayAnimator {
 
   private renderBubble(content: BubbleContent): void {
     this.el.title.textContent = content.title;
+
+    if (content.kind === 'reconnect') {
+      this.el.time.textContent = content.message;
+      // Borrow the same red/pulsing/hop treatment as an imminent meeting —
+      // a lapsed connection silently kills every future alert, which is at
+      // least as urgent as any single meeting.
+      this.setUrgency('now');
+      this.el.bubble.setAttribute('aria-label', 'Calendar connection lost');
+      this.el.joinButton.hidden = false;
+      this.el.joinButton.textContent = 'Reconnect';
+      this.el.joinButton.dataset.url = '';
+      return;
+    }
+
+    this.el.bubble.setAttribute('aria-label', 'Upcoming meeting reminder');
+    this.el.joinButton.textContent = 'Join Call';
     this.el.time.textContent = content.countdown;
     this.setUrgency(content.urgency);
 

@@ -13,7 +13,12 @@ import { mountCharacter } from './lib/characters/character.ts';
 import { createCharacterRotation, type CharacterRotation } from './lib/characters/roster.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, describeCountdown, type CountdownDelta } from './lib/countdown.ts';
-import { shouldPresent, isActiveEventStale, shouldAutoDismiss } from './lib/alert.ts';
+import {
+  shouldPresent,
+  isActiveEventStale,
+  shouldAutoDismiss,
+  isConnectionLapse,
+} from './lib/alert.ts';
 import { demoBubbleContent } from './lib/demo.ts';
 import { nextFetchDelayMs } from './lib/poll.ts';
 import { authMenuLabel, authToggleAction, formatTrayStatus, type SyncState } from './lib/tray.ts';
@@ -59,6 +64,14 @@ const FETCH_HORIZON_MINUTES = 24 * 60;
 const TICK_INTERVAL_MS = MS_PER_SECOND;
 /** How long the tray "Test Overlay" preview stays up before auto-dismissing. */
 const DEMO_HOLD_MS = 6 * MS_PER_SECOND;
+/**
+ * Sentinel `activeEventId` for the "connection lapsed" overlay alert. Never
+ * collides with a real Google Calendar event id, so it can reuse the same
+ * present/dismiss bookkeeping (`activeEventId`, `dismiss()`) as a meeting.
+ */
+const RECONNECT_ALERT_ID = '__reconnect__';
+const RECONNECT_TITLE = 'Calendar connection lost';
+const RECONNECT_MESSAGE = 'Sign in again to keep getting meeting alerts';
 
 /** Resolve a required element or fail loudly at startup. */
 function mustGet<T extends HTMLElement>(id: string): T {
@@ -109,6 +122,13 @@ class AlertController {
   private refreshing = false;
   /** True while the adaptive poll loop is active (paused while signed out). */
   private polling = false;
+  /**
+   * True from the moment a previously-working sign-in silently lapses until
+   * the user dismisses the reconnect alert or successfully signs in again.
+   * Drives `tick()` to present (and keep presenting) the reconnect overlay,
+   * mirroring how `next` drives meeting alerts.
+   */
+  private reconnectPending = false;
   /** Pending poll-loop timer, so it can be cancelled on sign-out. */
   private pollTimer: number | undefined;
   /** Pending auto-dismiss timer for a "Test Overlay" preview, if any. */
@@ -126,6 +146,11 @@ class AlertController {
     this.rotation = rotation;
 
     this.elements.joinButton.addEventListener('click', () => {
+      if (this.activeEventId === RECONNECT_ALERT_ID) {
+        void this.signIn();
+        void this.runExclusive(() => this.dismiss());
+        return;
+      }
       const url = this.elements.joinButton.dataset.url;
       if (url) void openExternal(url);
       void this.runExclusive(() => this.dismiss());
@@ -199,6 +224,7 @@ class AlertController {
     try {
       await this.calendar.authenticate();
       this.signedIn = true;
+      this.reconnectPending = false; // a fresh token resolves any prior lapse
       this.startPolling(); // immediate fetch + resume the adaptive loop
     } catch (error) {
       console.error('Google sign-in failed', error);
@@ -211,6 +237,7 @@ class AlertController {
     try {
       await this.calendar.signOut();
       this.signedIn = false;
+      this.reconnectPending = false; // an intentional sign-out is not a lapse
       this.stopPolling(); // nothing to poll once the account is gone
       this.next = null;
       this.lastSync = null;
@@ -246,10 +273,19 @@ class AlertController {
   private async poll(): Promise<void> {
     if (!this.polling) return;
     try {
-      if (!(await this.calendar.isSignedIn())) {
+      const stillSignedIn = await this.calendar.isSignedIn();
+      if (!stillSignedIn) {
+        if (isConnectionLapse(this.signedIn, stillSignedIn)) {
+          // The token was cleared out from under us (revoked/expired refresh
+          // token), not an intentional sign-out — surface it loudly rather
+          // than just going quiet until the user happens to open the tray.
+          this.reconnectPending = true;
+        }
         this.signedIn = false;
         this.polling = false; // nothing to poll until sign-in restarts the loop
+        this.next = null; // stale cache must not still trigger a meeting alert
         this.updateStatus(); // reflect a token that lapsed out from under us
+        await setAuthMenuLabel(authMenuLabel(false)); // the tray item was still offering "Sign out"
         return;
       }
       this.signedIn = true;
@@ -342,6 +378,18 @@ class AlertController {
    */
   tick(): Promise<void> {
     return this.runExclusive(async () => {
+      if (this.reconnectPending) {
+        // Don't walk the reconnect character on over a live meeting alert —
+        // dismiss it properly first, then present reconnect in its place.
+        if (this.activeEventId !== null && this.activeEventId !== RECONNECT_ALERT_ID) {
+          await this.dismiss();
+        }
+        if (this.activeEventId !== RECONNECT_ALERT_ID) {
+          await this.presentReconnect();
+        }
+        return;
+      }
+
       const next = this.next;
       const now = new Date();
 
@@ -399,9 +447,27 @@ class AlertController {
     // Make the window interactive so the Join button is clickable.
     await setClickThrough(false);
     await this.animator.present({
+      kind: 'meeting',
       title: event.title,
       joinUrl: event.joinUrl,
       ...describeCountdown(delta),
+    });
+  }
+
+  /**
+   * Fires when a previously-working sign-in silently lapses. Reuses the same
+   * attention-grabbing entrance as a meeting alert — a dead connection kills
+   * every future alert, so it needs to be at least as noticeable as one.
+   */
+  private async presentReconnect(): Promise<void> {
+    this.activeEventId = RECONNECT_ALERT_ID;
+    mountCharacter(this.elements.character, this.rotation.advance());
+    await showOverlay();
+    await setClickThrough(false);
+    await this.animator.present({
+      kind: 'reconnect',
+      title: RECONNECT_TITLE,
+      message: RECONNECT_MESSAGE,
     });
   }
 
@@ -411,6 +477,13 @@ class AlertController {
     if (this.demoTimer !== undefined) {
       window.clearTimeout(this.demoTimer);
       this.demoTimer = undefined;
+    }
+    if (this.activeEventId === RECONNECT_ALERT_ID) {
+      // The user has acknowledged (Reconnect or Dismiss); stop the noticeable
+      // retry loop. If a Reconnect attempt failed, signIn()'s own error dialog
+      // covers surfacing that — the tray's status line and "Sign in with
+      // Google" item remain as the persistent fallback.
+      this.reconnectPending = false;
     }
     // Remember what we dismissed so a still-upcoming meeting doesn't pop back
     // up on the next tick (e.g. right after the user clicks "Join Call"). Guard
