@@ -70,3 +70,14 @@ export function shouldAutoDismiss(delta: CountdownDelta, graceMinutes: number): 
   }
   return delta.totalMs <= -(graceMinutes * MS_PER_MINUTE);
 }
+
+/**
+ * Whether a sign-in check that used to succeed just failed — a silent
+ * connection lapse (a revoked/expired refresh token, cleared out from under
+ * the app) as opposed to a user who was never signed in to begin with.
+ * Distinguishing the two matters: only a genuine lapse should trigger the
+ * noisy "reconnect" overlay alert, not every idle poll while signed out.
+ */
+export function isConnectionLapse(wasSignedIn: boolean, isSignedInNow: boolean): boolean {
+  return wasSignedIn && !isSignedInNow;
+}
