@@ -45,32 +45,61 @@ export interface CalendarSync {
 }
 
 /**
- * Pick the soonest event that hasn't started yet, regardless of the input's
- * order.
+ * Order simultaneous events for display: by title, then by id so the list is
+ * stable across polls (Google returns same-start events in an arbitrary order).
+ */
+function byTitleThenId(a: CalendarEvent, b: CalendarEvent): number {
+  if (a.title !== b.title) return a.title < b.title ? -1 : 1;
+  if (a.id !== b.id) return a.id < b.id ? -1 : 1;
+  return 0;
+}
+
+/**
+ * Pick every event tied for the soonest start time that hasn't passed yet,
+ * regardless of the input's order.
+ *
+ * Double-booking is routine — two meetings at 10:00 and only one of them is
+ * the one you meant to attend. Alerting for just one of them (whichever the
+ * API happened to list first) silently hides the other, so the overlay
+ * presents the whole tie as a single alert and lets the user pick.
  *
  * Google's `events.list` filters by `timeMin` against an event's *end* time,
  * not its start — so a meeting already in progress still comes back first in
- * a `startTime`-sorted list until it actually ends. Left unfiltered, `next`
- * would stay pinned to that in-progress meeting for its entire duration,
- * missing the alert lead time for whatever starts immediately after it (i.e.
- * back-to-back meetings never get their own overlay).
+ * a `startTime`-sorted list until it actually ends. Left unfiltered, the
+ * selection would stay pinned to that in-progress meeting for its entire
+ * duration, missing the alert lead time for whatever starts immediately after
+ * it (i.e. back-to-back meetings never get their own overlay).
+ *
+ * @returns the tied events in a stable display order, or `[]` if none are
+ *   upcoming.
+ */
+export function selectNextEvents(events: readonly CalendarEvent[], now: Date): CalendarEvent[] {
+  const nowMs = now.getTime();
+  let soonestMs = Infinity;
+  for (const event of events) {
+    const startMs = event.start.getTime();
+    if (startMs > nowMs && startMs < soonestMs) soonestMs = startMs;
+  }
+  if (soonestMs === Infinity) return [];
+  return events.filter((event) => event.start.getTime() === soonestMs).sort(byTitleThenId);
+}
+
+/**
+ * The single soonest upcoming event — the first of `selectNextEvents`, used
+ * where only one representative is needed (the poll cadence, the tray line).
  */
 export function selectNextEvent(events: readonly CalendarEvent[], now: Date): CalendarEvent | null {
-  let soonest: CalendarEvent | null = null;
-  for (const event of events) {
-    if (event.start.getTime() <= now.getTime()) continue;
-    if (soonest === null || event.start.getTime() < soonest.start.getTime()) {
-      soonest = event;
-    }
-  }
-  return soonest;
+  return selectNextEvents(events, now)[0] ?? null;
 }
 
 /**
  * Deterministic in-memory implementation used in development and tests.
  *
- * It synthesizes a single meeting a fixed number of seconds in the future so
- * the entry animation and speech bubble can be exercised on demand.
+ * It synthesizes a meeting a fixed number of seconds in the future so the entry
+ * animation and speech bubble can be exercised on demand, and every third round
+ * makes those meetings *simultaneous* — so a session running on the mock walks
+ * through both the plain bubble and the pick-one-of-several list without
+ * needing a genuinely double-booked calendar.
  */
 export class MockCalendarSync implements CalendarSync {
   private readonly secondsUntilMeeting: number;
@@ -78,15 +107,22 @@ export class MockCalendarSync implements CalendarSync {
   private readonly rearmAfterMs = 5 * MS_PER_SECOND;
   /** Synthetic meeting length, mirroring the real parser's default. */
   private readonly meetingDurationMs = 30 * MS_PER_MINUTE;
+  /** The cast of synthetic meetings, cycled through on each re-arm. */
+  private static readonly TEMPLATES: readonly { title: string; joinUrl: string | null }[] = [
+    { title: 'Sprint Planning', joinUrl: 'https://meet.google.com/abc-defg-hij' },
+    { title: 'Design Review', joinUrl: 'https://zoom.us/j/9876543210' },
+    { title: 'Budget Sync (no link)', joinUrl: null },
+  ];
   private sequence = 0;
-  private current: CalendarEvent;
+  /** The events tied for the next start time — one, or several at once. */
+  private current: CalendarEvent[];
   /** Tracks the simulated auth state so the tray toggle reflects sign-in. */
   private signedIn = false;
 
   constructor(secondsUntilMeeting = 8) {
     this.secondsUntilMeeting = secondsUntilMeeting;
     // Pin the start time ONCE so the countdown actually decreases over time.
-    this.current = this.makeEvent();
+    this.current = this.makeEvents();
   }
 
   authenticate(): Promise<OAuthToken> {
@@ -110,22 +146,37 @@ export class MockCalendarSync implements CalendarSync {
   getUpcomingEvents(_withinMs: number): Promise<CalendarEvent[]> {
     // Once the current meeting has started (and the overlay has dismissed),
     // schedule a fresh one so the template keeps demoing the full sequence.
-    if (Date.now() - this.current.start.getTime() > this.rearmAfterMs) {
-      this.current = this.makeEvent();
+    if (Date.now() - this.nextStart().getTime() > this.rearmAfterMs) {
+      this.current = this.makeEvents();
     }
-    return Promise.resolve([this.current]);
+    return Promise.resolve([...this.current]);
   }
 
-  private makeEvent(): CalendarEvent {
+  /** Start time of the currently armed batch (they all share one). */
+  private nextStart(): Date {
+    // `makeEvents` never returns an empty batch, so index 0 is always present.
+    return this.current[0].start;
+  }
+
+  /**
+   * Build the next batch: every third round is a triple-booking, so the
+   * simultaneous-meeting picker comes up on its own rather than only when a
+   * real calendar happens to clash.
+   */
+  private makeEvents(): CalendarEvent[] {
     this.sequence += 1;
+    const simultaneous = this.sequence % 3 === 0;
     const start = new Date(Date.now() + this.secondsUntilMeeting * MS_PER_SECOND);
-    return {
-      id: `mock-event-${String(this.sequence).padStart(3, '0')}`,
-      title: 'Sprint Planning',
+    const templates = simultaneous
+      ? MockCalendarSync.TEMPLATES
+      : [MockCalendarSync.TEMPLATES[this.sequence % MockCalendarSync.TEMPLATES.length]];
+    return templates.map((template, index) => ({
+      id: `mock-event-${String(this.sequence).padStart(3, '0')}-${String(index)}`,
+      title: template.title,
       start,
       end: new Date(start.getTime() + this.meetingDurationMs),
-      joinUrl: 'https://meet.google.com/abc-defg-hij',
-    };
+      joinUrl: template.joinUrl,
+    }));
   }
 
   private fakeToken(): OAuthToken {

@@ -109,4 +109,24 @@ describe('formatTrayStatus', () => {
     });
     expect(status.meeting).toMatch(/^Next: .{31}… in /);
   });
+
+  it('summarizes a double-booked slot instead of naming one of the meetings', () => {
+    const status = formatTrayStatus({
+      signedIn: true,
+      lastSync: { ok: true, at: now },
+      next: { title: 'Standup', start: new Date(now.getTime() + 4 * 60_000), count: 2 },
+      now,
+    });
+    expect(status.meeting).toBe('Next: 2 meetings in 4m 00s');
+  });
+
+  it('still names the meeting when only one starts at that time', () => {
+    const status = formatTrayStatus({
+      signedIn: true,
+      lastSync: { ok: true, at: now },
+      next: { title: 'Standup', start: new Date(now.getTime() + 4 * 60_000), count: 1 },
+      now,
+    });
+    expect(status.meeting).toBe('Next: Standup in 4m 00s');
+  });
 });

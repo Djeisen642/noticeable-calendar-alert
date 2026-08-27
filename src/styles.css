@@ -739,6 +739,51 @@ body {
   }
 }
 
+/* ---------- Simultaneous-meeting pick list ----------
+   Shown only when several meetings share a start time: one row per meeting so
+   the user can see the clash and choose which to join. Hidden (and emptied)
+   for the ordinary single-meeting alert. */
+
+.bubble__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.bubble__choices[hidden] {
+  display: none;
+}
+
+.bubble__choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A meeting whose invite carries no conference link: still listed (so the
+   clash is visible) but plainly not joinable. */
+.bubble__choice-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.6;
+  /* Long titles must not blow out the bubble's max-width. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bubble__choice-note {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5a6072;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
 .bubble__join {
   display: inline-block;
   width: 100%;
@@ -766,6 +811,26 @@ body {
 .bubble__join:focus-visible {
   outline: 2px solid var(--accent-strong);
   outline-offset: 2px;
+}
+
+/* Per-meeting Join button: the same affordance as the single-meeting one,
+   but labelled with the meeting it joins. */
+.bubble__join--choice {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* `hidden` must actually hide these. An author `display` declaration beats the
+   UA stylesheet's `[hidden] { display: none }` regardless of specificity, so
+   without this the join button stayed visible whenever the animator hid it —
+   a dead "Join Call" on a linkless meeting, or beside the pick list. */
+.bubble__join[hidden],
+.bubble__dismiss[hidden] {
+  display: none;
 }
 
 .bubble__dismiss {

@@ -20,6 +20,10 @@
       >
         <p id="bubble-title" class="bubble__title">Meeting</p>
         <p id="bubble-time" class="bubble__time">in 5m</p>
+        <!-- Pick list, populated by the animator only when several meetings
+             start at the same moment; hidden for the ordinary single-meeting
+             alert, which uses the #join-button below instead. -->
+        <ul id="bubble-choices" class="bubble__choices" hidden></ul>
         <button id="join-button" class="bubble__join" type="button">Join Call</button>
         <button id="dismiss-button" class="bubble__dismiss" type="button">Dismiss</button>
         <span class="bubble__tail" aria-hidden="true"></span>

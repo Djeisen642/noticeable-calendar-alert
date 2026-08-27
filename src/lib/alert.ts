@@ -8,50 +8,80 @@ import { shouldAlert, type CountdownDelta } from './countdown.ts';
 import { MS_PER_MINUTE } from './time.ts';
 
 export interface AlertState {
-  /** The event currently on screen, if any. */
-  readonly activeEventId: string | null;
-  /** The last event the user actively dismissed (e.g. clicked "Join Call"). */
-  readonly dismissedEventId: string | null;
+  /** The alert currently on screen, if any. */
+  readonly activeAlertKey: string | null;
+  /** The last alert the user actively dismissed (e.g. clicked "Join Call"). */
+  readonly dismissedAlertKey: string | null;
 }
 
 /**
- * Whether the overlay's currently active event is stale and must be
- * dismissed before anything else happens.
+ * Separator for the ids inside a composite alert key. NUL can't appear in a
+ * Google Calendar event id, so no combination of ids can forge another key.
+ */
+const KEY_SEPARATOR = '\u0000';
+
+/**
+ * The identity of one alert: a single event, or several that start at the same
+ * moment and are therefore presented together as a pick-one list.
+ *
+ * Sorting the ids makes the key independent of the order the API returned them
+ * in, so a re-poll that reshuffles a tie doesn't read as a different alert and
+ * re-present something the user already dismissed.
+ *
+ * @returns the key, or `null` when there is nothing to alert about.
+ */
+export function alertKey(events: readonly CalendarEvent[]): string | null {
+  if (events.length === 0) {
+    return null;
+  }
+  return events
+    .map((event) => event.id)
+    .sort()
+    .join(KEY_SEPARATOR);
+}
+
+/**
+ * Whether the overlay's currently active alert is stale and must be dismissed
+ * before anything else happens.
  *
  * `tick()` and the calendar poll aren't mutually exclusive, so a poll can
- * advance `next` to a different event while the previous one is still on
- * screen (e.g. a back-to-back meeting whose predecessor hasn't been
- * dismissed yet). Presenting the new event straight over the old one would
- * skip its exit animation and its `dismissedEventId` bookkeeping, so that
- * case must run through `dismiss()` first.
+ * advance the selection to a different event while the previous one is still on
+ * screen (e.g. a back-to-back meeting whose predecessor hasn't been dismissed
+ * yet), or add a newly-accepted invite to a tie that is already showing.
+ * Presenting the new alert straight over the old one would skip its exit
+ * animation and its `dismissedAlertKey` bookkeeping, so that case must run
+ * through `dismiss()` first.
  */
-export function isActiveEventStale(
-  activeEventId: string | null,
-  nextEventId: string | null,
-): boolean {
-  return activeEventId !== null && activeEventId !== nextEventId;
+export function isActiveAlertStale(activeKey: string | null, nextKey: string | null): boolean {
+  return activeKey !== null && activeKey !== nextKey;
 }
 
 /**
- * Whether `event` should be freshly presented now.
+ * Whether `events` — one meeting, or several starting at the same moment —
+ * should be freshly presented now.
  *
- * Crucially, an event the user already dismissed is NOT re-presented while it
- * is still upcoming — otherwise clicking "Join Call" (which dismisses the
- * overlay) would just make it pop straight back up on the next tick.
+ * Crucially, an alert the user already dismissed is NOT re-presented while its
+ * meetings are still upcoming — otherwise clicking "Join Call" (which dismisses
+ * the overlay) would just make it pop straight back up on the next tick.
  */
 export function shouldPresent(
-  event: CalendarEvent,
+  events: readonly CalendarEvent[],
   now: Date,
   leadTimeMinutes: number,
   state: AlertState,
 ): boolean {
-  if (event.id === state.activeEventId) {
+  const key = alertKey(events);
+  if (key === null) {
+    return false; // nothing upcoming
+  }
+  if (key === state.activeAlertKey) {
     return false; // already showing
   }
-  if (event.id === state.dismissedEventId) {
+  if (key === state.dismissedAlertKey) {
     return false; // the user already handled this one
   }
-  return shouldAlert(event.start, now, leadTimeMinutes);
+  // Every event in the group shares a start time, so any of them will do.
+  return shouldAlert(events[0].start, now, leadTimeMinutes);
 }
 
 /**

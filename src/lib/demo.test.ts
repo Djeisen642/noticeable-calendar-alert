@@ -9,6 +9,10 @@ describe('demoBubbleContent', () => {
     expect(demoBubbleContent(now).title).toBe(DEMO_TITLE);
   });
 
+  it('previews the single-meeting bubble, not the simultaneous pick list', () => {
+    expect(demoBubbleContent(now).meetings).toHaveLength(1);
+  });
+
   it('renders a countdown for a meeting DEMO_LEAD_MINUTES out', () => {
     expect(demoBubbleContent(now).countdown).toBe(`in ${DEMO_LEAD_MINUTES}m 00s`);
   });
@@ -23,8 +27,8 @@ describe('demoBubbleContent', () => {
     // Regression guard: the preview must use a real provider host, otherwise the
     // "Join Call" button would be hidden (no URL) or rejected by safeJoinUrl —
     // defeating the point of previewing the overlay.
-    const { joinUrl } = demoBubbleContent(now);
-    expect(joinUrl).toBe(DEMO_JOIN_URL);
-    expect(safeJoinUrl(joinUrl)).toBe(DEMO_JOIN_URL);
+    const [meeting] = demoBubbleContent(now).meetings;
+    expect(meeting.joinUrl).toBe(DEMO_JOIN_URL);
+    expect(safeJoinUrl(meeting.joinUrl)).toBe(DEMO_JOIN_URL);
   });
 });

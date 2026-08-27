@@ -8,14 +8,16 @@
  */
 
 import { OverlayAnimator, type OverlayElements } from './lib/animation.ts';
-import { selectNextEvent, type CalendarEvent, type CalendarSync } from './lib/calendar.ts';
+import { meetingBubbleContent } from './lib/bubble.ts';
+import { selectNextEvents, type CalendarEvent, type CalendarSync } from './lib/calendar.ts';
 import { mountCharacter } from './lib/characters/character.ts';
 import { createCharacterRotation, type CharacterRotation } from './lib/characters/roster.ts';
 import { createCalendarSync } from './lib/google/config.ts';
 import { getCountdownDelta, describeCountdown, type CountdownDelta } from './lib/countdown.ts';
 import {
+  alertKey,
   shouldPresent,
-  isActiveEventStale,
+  isActiveAlertStale,
   shouldAutoDismiss,
   isConnectionLapse,
 } from './lib/alert.ts';
@@ -65,9 +67,9 @@ const TICK_INTERVAL_MS = MS_PER_SECOND;
 /** How long the tray "Test Overlay" preview stays up before auto-dismissing. */
 const DEMO_HOLD_MS = 6 * MS_PER_SECOND;
 /**
- * Sentinel `activeEventId` for the "connection lapsed" overlay alert. Never
- * collides with a real Google Calendar event id, so it can reuse the same
- * present/dismiss bookkeeping (`activeEventId`, `dismiss()`) as a meeting.
+ * Sentinel alert key for the "connection lapsed" overlay alert. Never collides
+ * with a real Google Calendar event id, so it can reuse the same
+ * present/dismiss bookkeeping (`activeAlertKey`, `dismiss()`) as a meeting.
  */
 const RECONNECT_ALERT_ID = '__reconnect__';
 const RECONNECT_TITLE = 'Calendar connection lost';
@@ -89,6 +91,7 @@ function resolveElements(): OverlayElements {
     bubble: mustGet('bubble'),
     title: mustGet('bubble-title'),
     time: mustGet('bubble-time'),
+    choices: mustGet('bubble-choices'),
     joinButton: mustGet<HTMLButtonElement>('join-button'),
     dismissButton: mustGet<HTMLButtonElement>('dismiss-button'),
   };
@@ -104,11 +107,19 @@ class AlertController {
   private readonly elements: OverlayElements;
   /** The rotating cast: each present/demo brings the next character on. */
   private readonly rotation: CharacterRotation;
-  private activeEventId: string | null = null;
-  /** The last event the user dismissed, so we don't immediately re-present it. */
-  private dismissedEventId: string | null = null;
-  /** Cached soonest event; refreshed on the slow fetch cadence. */
-  private next: CalendarEvent | null = null;
+  /**
+   * Identity of the alert on screen (see `alertKey`) — one meeting, several
+   * simultaneous ones, or the reconnect sentinel.
+   */
+  private activeAlertKey: string | null = null;
+  /** The last alert the user dismissed, so we don't immediately re-present it. */
+  private dismissedAlertKey: string | null = null;
+  /**
+   * Cached soonest meetings, refreshed on the slow fetch cadence. More than one
+   * only when they start at the same moment — the user is double-booked and
+   * gets to pick. Empty when nothing is upcoming.
+   */
+  private next: CalendarEvent[] = [];
   /** Outcome of the most recent calendar fetch, for the tray sync-health line. */
   private lastSync: SyncState | null = null;
   /** Cached sign-in state so the per-second status re-render needs no keychain. */
@@ -146,14 +157,23 @@ class AlertController {
     this.rotation = rotation;
 
     this.elements.joinButton.addEventListener('click', () => {
-      if (this.activeEventId === RECONNECT_ALERT_ID) {
+      if (this.activeAlertKey === RECONNECT_ALERT_ID) {
         void this.signIn();
         void this.runExclusive(() => this.dismiss());
         return;
       }
-      const url = this.elements.joinButton.dataset.url;
-      if (url) void openExternal(url);
-      void this.runExclusive(() => this.dismiss());
+      this.join(this.elements.joinButton.dataset.url);
+    });
+
+    // Simultaneous meetings render one button per meeting, so the handler is
+    // delegated to their container: the buttons themselves are rebuilt on every
+    // present and would otherwise each need (and leak) their own listener.
+    this.elements.choices.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest('button');
+      if (button === null) return;
+      this.join(button.dataset.url);
     });
 
     this.elements.dismissButton.addEventListener('click', () => {
@@ -208,7 +228,10 @@ class AlertController {
     const status = formatTrayStatus({
       signedIn: this.signedIn,
       lastSync: this.lastSync,
-      next: this.next === null ? null : { title: this.next.title, start: this.next.start },
+      next:
+        this.next.length === 0
+          ? null
+          : { title: this.next[0].title, start: this.next[0].start, count: this.next.length },
       now: new Date(),
     });
     if (status.connection === this.lastConnection && status.meeting === this.lastMeeting) {
@@ -239,9 +262,9 @@ class AlertController {
       this.signedIn = false;
       this.reconnectPending = false; // an intentional sign-out is not a lapse
       this.stopPolling(); // nothing to poll once the account is gone
-      this.next = null;
+      this.next = [];
       this.lastSync = null;
-      await this.tick(); // tears down a visible overlay now that next is null
+      await this.tick(); // tears down a visible overlay now that nothing is cached
     } catch (error) {
       console.error('Google sign-out failed', error);
       await showError('Google sign-out failed', describeError(error));
@@ -283,7 +306,7 @@ class AlertController {
         }
         this.signedIn = false;
         this.polling = false; // nothing to poll until sign-in restarts the loop
-        this.next = null; // stale cache must not still trigger a meeting alert
+        this.next = []; // stale cache must not still trigger a meeting alert
         this.updateStatus(); // reflect a token that lapsed out from under us
         await setAuthMenuLabel(authMenuLabel(false)); // the tray item was still offering "Sign out"
         return;
@@ -301,7 +324,7 @@ class AlertController {
     if (!this.polling) return; // stopped (e.g. signed out) during the fetch
     this.pollTimer = window.setTimeout(
       () => void this.poll(),
-      nextFetchDelayMs(this.next, new Date()),
+      nextFetchDelayMs(this.next[0] ?? null, new Date()),
     );
   }
 
@@ -330,7 +353,7 @@ class AlertController {
   async demo(): Promise<void> {
     let presented = false;
     await this.runExclusive(async () => {
-      if (this.activeEventId !== null) return; // a real alert owns the overlay
+      if (this.activeAlertKey !== null) return; // a real alert owns the overlay
       presented = true;
       // Rotate the cast while the stage is off screen, then run the entrance.
       mountCharacter(this.elements.character, this.rotation.advance());
@@ -344,7 +367,7 @@ class AlertController {
     this.demoTimer = window.setTimeout(() => {
       this.demoTimer = undefined;
       // Only tear down the preview if a real meeting hasn't taken over since.
-      if (this.activeEventId === null) void this.runExclusive(() => this.dismiss());
+      if (this.activeAlertKey === null) void this.runExclusive(() => this.dismiss());
     }, DEMO_HOLD_MS);
   }
 
@@ -359,7 +382,7 @@ class AlertController {
     this.refreshing = true;
     try {
       const events = await this.calendar.getUpcomingEvents(FETCH_HORIZON_MINUTES * MS_PER_MINUTE);
-      this.next = selectNextEvent(events, new Date());
+      this.next = selectNextEvents(events, new Date());
       this.lastSync = { ok: true, at: new Date() };
     } catch (error) {
       console.error('Calendar refresh failed', error);
@@ -381,10 +404,10 @@ class AlertController {
       if (this.reconnectPending) {
         // Don't walk the reconnect character on over a live meeting alert —
         // dismiss it properly first, then present reconnect in its place.
-        if (this.activeEventId !== null && this.activeEventId !== RECONNECT_ALERT_ID) {
+        if (this.activeAlertKey !== null && this.activeAlertKey !== RECONNECT_ALERT_ID) {
           await this.dismiss();
         }
-        if (this.activeEventId !== RECONNECT_ALERT_ID) {
+        if (this.activeAlertKey !== RECONNECT_ALERT_ID) {
           await this.presentReconnect();
         }
         return;
@@ -392,26 +415,29 @@ class AlertController {
 
       const next = this.next;
       const now = new Date();
+      const nextKey = alertKey(next);
 
-      // A poll can advance `next` past the event currently on screen (e.g. a
-      // back-to-back meeting whose predecessor hasn't been dismissed yet).
-      // Dismiss it properly before considering what's next, rather than
-      // presenting straight over it.
-      if (isActiveEventStale(this.activeEventId, next?.id ?? null)) {
+      // A poll can move the selection past what's on screen (e.g. a
+      // back-to-back meeting whose predecessor hasn't been dismissed yet, or a
+      // newly-accepted invite joining a tie that's already up). Dismiss it
+      // properly before considering what's next, rather than presenting
+      // straight over it.
+      if (isActiveAlertStale(this.activeAlertKey, nextKey)) {
         await this.dismiss();
       }
 
-      if (next === null) {
-        if (this.activeEventId !== null) await this.dismiss();
+      if (nextKey === null) {
+        if (this.activeAlertKey !== null) await this.dismiss();
         return;
       }
 
-      const delta = getCountdownDelta(next.start, now);
+      // Simultaneous meetings share a start time, so one delta covers them all.
+      const delta = getCountdownDelta(next[0].start, now);
 
-      if (this.activeEventId === next.id) {
-        // Already showing this meeting — just keep the countdown fresh. It
-        // stays up through the meeting's start (escalating to "overdue") and
-        // only auto-dismisses once the grace period has elapsed unanswered.
+      if (this.activeAlertKey === nextKey) {
+        // Already showing this alert — just keep the countdown fresh. It stays
+        // up through the meeting's start (escalating to "overdue") and only
+        // auto-dismisses once the grace period has elapsed unanswered.
         this.animator.updateCountdown(describeCountdown(delta));
         if (shouldAutoDismiss(delta, AUTO_DISMISS_GRACE_MINUTES)) await this.dismiss();
         return;
@@ -419,13 +445,24 @@ class AlertController {
 
       if (
         shouldPresent(next, now, LEAD_TIME_MINUTES, {
-          activeEventId: this.activeEventId,
-          dismissedEventId: this.dismissedEventId,
+          activeAlertKey: this.activeAlertKey,
+          dismissedAlertKey: this.dismissedAlertKey,
         })
       ) {
-        await this.present(next, delta);
+        await this.present(next, nextKey, delta);
       }
     });
+  }
+
+  /**
+   * Open a chosen meeting's link and take the overlay down. Shared by the
+   * single-meeting "Join Call" button and each row of the simultaneous-meeting
+   * pick list. A missing URL still dismisses — the user has made their choice
+   * either way, and `openExternal` re-validates whatever it is given.
+   */
+  private join(url: string | undefined): void {
+    if (url) void openExternal(url);
+    void this.runExclusive(() => this.dismiss());
   }
 
   /** Serialize overlay mutations so present/dismiss can never interleave. */
@@ -439,19 +476,18 @@ class AlertController {
     }
   }
 
-  private async present(event: CalendarEvent, delta: CountdownDelta): Promise<void> {
-    this.activeEventId = event.id;
+  private async present(
+    events: readonly CalendarEvent[],
+    key: string,
+    delta: CountdownDelta,
+  ): Promise<void> {
+    this.activeAlertKey = key;
     // Rotate the cast while the stage is off screen, then run the entrance.
     mountCharacter(this.elements.character, this.rotation.advance());
     await showOverlay();
-    // Make the window interactive so the Join button is clickable.
+    // Make the window interactive so the Join button(s) are clickable.
     await setClickThrough(false);
-    await this.animator.present({
-      kind: 'meeting',
-      title: event.title,
-      joinUrl: event.joinUrl,
-      ...describeCountdown(delta),
-    });
+    await this.animator.present(meetingBubbleContent(events, delta));
   }
 
   /**
@@ -460,7 +496,7 @@ class AlertController {
    * every future alert, so it needs to be at least as noticeable as one.
    */
   private async presentReconnect(): Promise<void> {
-    this.activeEventId = RECONNECT_ALERT_ID;
+    this.activeAlertKey = RECONNECT_ALERT_ID;
     mountCharacter(this.elements.character, this.rotation.advance());
     await showOverlay();
     await setClickThrough(false);
@@ -478,7 +514,7 @@ class AlertController {
       window.clearTimeout(this.demoTimer);
       this.demoTimer = undefined;
     }
-    if (this.activeEventId === RECONNECT_ALERT_ID) {
+    if (this.activeAlertKey === RECONNECT_ALERT_ID) {
       // The user has acknowledged (Reconnect or Dismiss); stop the noticeable
       // retry loop. If a Reconnect attempt failed, signIn()'s own error dialog
       // covers surfacing that — the tray's status line and "Sign in with
@@ -489,10 +525,10 @@ class AlertController {
     // up on the next tick (e.g. right after the user clicks "Join Call"). Guard
     // against a null active id — tearing down a "Test Overlay" preview must not
     // erase the memory of a real meeting the user previously dismissed.
-    if (this.activeEventId !== null) {
-      this.dismissedEventId = this.activeEventId;
+    if (this.activeAlertKey !== null) {
+      this.dismissedAlertKey = this.activeAlertKey;
     }
-    this.activeEventId = null;
+    this.activeAlertKey = null;
     await this.animator.dismiss();
     // Restore click-through and tuck the window away.
     await setClickThrough(true);

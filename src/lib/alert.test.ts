@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+  alertKey,
   shouldPresent,
-  isActiveEventStale,
+  isActiveAlertStale,
   shouldAutoDismiss,
   isConnectionLapse,
   type AlertState,
@@ -22,57 +23,114 @@ function event(id: string, minutesFromNow: number): CalendarEvent {
   };
 }
 
-const fresh: AlertState = { activeEventId: null, dismissedEventId: null };
+const fresh: AlertState = { activeAlertKey: null, dismissedAlertKey: null };
+
+describe('alertKey', () => {
+  it('is null when there is nothing to alert about', () => {
+    expect(alertKey([])).toBeNull();
+  });
+
+  it('is the event id for a single meeting', () => {
+    expect(alertKey([event('a', 3)])).toBe('a');
+  });
+
+  it('combines the ids of simultaneous meetings', () => {
+    expect(alertKey([event('a', 3), event('b', 3)])).toContain('a');
+    expect(alertKey([event('a', 3), event('b', 3)])).toContain('b');
+  });
+
+  it('is independent of the order the API listed a tie in', () => {
+    // A re-poll can reshuffle same-start events. If that changed the key, the
+    // alert would read as new and pop back up after the user dismissed it.
+    expect(alertKey([event('a', 3), event('b', 3)])).toBe(alertKey([event('b', 3), event('a', 3)]));
+  });
+
+  it('distinguishes a tie from either meeting alone', () => {
+    const both = alertKey([event('a', 3), event('b', 3)]);
+    expect(both).not.toBe(alertKey([event('a', 3)]));
+    expect(both).not.toBe(alertKey([event('b', 3)]));
+  });
+});
 
 describe('shouldPresent', () => {
   it('presents an upcoming meeting inside the lead window', () => {
-    expect(shouldPresent(event('a', 3), NOW, 5, fresh)).toBe(true);
+    expect(shouldPresent([event('a', 3)], NOW, 5, fresh)).toBe(true);
   });
 
   it('does not present a meeting beyond the lead window', () => {
-    expect(shouldPresent(event('a', 10), NOW, 5, fresh)).toBe(false);
+    expect(shouldPresent([event('a', 10)], NOW, 5, fresh)).toBe(false);
   });
 
   it('does not present a meeting that already started', () => {
-    expect(shouldPresent(event('a', -1), NOW, 5, fresh)).toBe(false);
+    expect(shouldPresent([event('a', -1)], NOW, 5, fresh)).toBe(false);
   });
 
-  it('does not re-present the event already on screen', () => {
+  it('does not present an empty selection', () => {
+    expect(shouldPresent([], NOW, 5, fresh)).toBe(false);
+  });
+
+  it('does not re-present the alert already on screen', () => {
     expect(
-      shouldPresent(event('a', 3), NOW, 5, { activeEventId: 'a', dismissedEventId: null }),
+      shouldPresent([event('a', 3)], NOW, 5, { activeAlertKey: 'a', dismissedAlertKey: null }),
     ).toBe(false);
   });
 
-  it('does not re-present an event the user dismissed (the Join-Call regression)', () => {
+  it('does not re-present an alert the user dismissed (the Join-Call regression)', () => {
     // Meeting is still 3 minutes out, but the user already clicked Join.
     expect(
-      shouldPresent(event('a', 3), NOW, 5, { activeEventId: null, dismissedEventId: 'a' }),
+      shouldPresent([event('a', 3)], NOW, 5, { activeAlertKey: null, dismissedAlertKey: 'a' }),
     ).toBe(false);
   });
 
   it('still presents a different upcoming event even after one was dismissed', () => {
     expect(
-      shouldPresent(event('b', 4), NOW, 5, { activeEventId: null, dismissedEventId: 'a' }),
+      shouldPresent([event('b', 4)], NOW, 5, { activeAlertKey: null, dismissedAlertKey: 'a' }),
+    ).toBe(true);
+  });
+
+  it('presents simultaneous meetings as one alert', () => {
+    expect(shouldPresent([event('a', 3), event('b', 3)], NOW, 5, fresh)).toBe(true);
+  });
+
+  it('does not re-present a dismissed tie when a re-poll reorders it', () => {
+    const dismissedAlertKey = alertKey([event('a', 3), event('b', 3)]);
+    expect(
+      shouldPresent([event('b', 3), event('a', 3)], NOW, 5, {
+        activeAlertKey: null,
+        dismissedAlertKey,
+      }),
+    ).toBe(false);
+  });
+
+  it('presents again when a third meeting joins a tie the user dismissed', () => {
+    // A newly-accepted invite for the same slot is genuinely new information:
+    // the user picked from two meetings, not three.
+    const dismissedAlertKey = alertKey([event('a', 3), event('b', 3)]);
+    expect(
+      shouldPresent([event('a', 3), event('b', 3), event('c', 3)], NOW, 5, {
+        activeAlertKey: null,
+        dismissedAlertKey,
+      }),
     ).toBe(true);
   });
 });
 
-describe('isActiveEventStale', () => {
+describe('isActiveAlertStale', () => {
   it('is not stale when nothing is active', () => {
-    expect(isActiveEventStale(null, 'b')).toBe(false);
-    expect(isActiveEventStale(null, null)).toBe(false);
+    expect(isActiveAlertStale(null, 'b')).toBe(false);
+    expect(isActiveAlertStale(null, null)).toBe(false);
   });
 
-  it('is not stale when the active event is still next', () => {
-    expect(isActiveEventStale('a', 'a')).toBe(false);
+  it('is not stale when the active alert is still next', () => {
+    expect(isActiveAlertStale('a', 'a')).toBe(false);
   });
 
   it('is stale when a poll advanced next to a different event (back-to-back)', () => {
-    expect(isActiveEventStale('a', 'b')).toBe(true);
+    expect(isActiveAlertStale('a', 'b')).toBe(true);
   });
 
   it('is stale when next has gone null while an event is still on screen', () => {
-    expect(isActiveEventStale('a', null)).toBe(true);
+    expect(isActiveAlertStale('a', null)).toBe(true);
   });
 });
 

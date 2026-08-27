@@ -56,13 +56,14 @@ src/
   lib/
     countdown.ts(.test) # Pure meeting-countdown math + countdownUrgency()
     poll.ts(.test)      # nextFetchDelayMs(): adaptive calendar-poll cadence
-    calendar.ts(.test)  # CalendarSync interface + deterministic MockCalendarSync
+    calendar.ts(.test)  # CalendarSync interface + selectNextEvents + MockCalendarSync
     characters/          # The mascot cast — one module per concern
       character.ts        # Character interface + core part-id contract + mountCharacter
       knight.ts           # The herald knight
       dragon.ts           # The crimson dragon (wings, tail, fire breath)
       roster.ts(.test)    # CHARACTERS + CharacterRotation + factory
       characters.test.ts  # Per-character id/docs/styles.css guards
+    bubble.ts(.test)    # Bubble content model: heading + the simultaneous-meeting list
     animation.ts        # OverlayAnimator (idle → walking → waving → presenting)
     url.ts(.test)       # safeExternalUrl(): http(s)-only guard for untrusted links
     tauri.ts            # Optional native bridge; degrades gracefully in a browser
@@ -101,8 +102,15 @@ src-tauri/
   except while the bubble is up — `set_click_through(false)` is called before
   presenting so the Join button is clickable, then `true` on dismiss.
 - **Security: calendar data is untrusted.** Meeting titles are rendered with
-  `textContent` (never `innerHTML`). Join URLs pass through `safeExternalUrl()`
-  and only `http(s)` ever reaches the OS opener.
+  `textContent` (never `innerHTML`) — including every row the animator builds
+  for the simultaneous-meeting pick list. Join URLs pass through
+  `safeExternalUrl()` and only `http(s)` ever reaches the OS opener.
+- **An alert is a _group_, not an event.** `selectNextEvents()` returns every
+  meeting tied for the soonest start, and the overlay presents the whole tie as
+  one alert with a Join button per meeting — a double-booked slot must never
+  silently pick one for the user. `alertKey()` (order-independent) is what
+  present/dismiss bookkeeping keys off, so a re-poll that reshuffles a tie
+  can't resurrect an alert the user already answered.
 - **Tauri permissions need a _scope_, not just the permission.** A bare
   capability string like `"opener:allow-open-url"` enables the command but leaves
   its allowlist empty, so at runtime every call is _denied_ ("Not allowed to open

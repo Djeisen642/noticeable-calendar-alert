@@ -7,6 +7,7 @@
  * classes/attributes and awaits the corresponding DOM events.
  */
 
+import type { BubbleContent, MeetingChoice } from './bubble.ts';
 import type { CountdownDisplay, Urgency } from './countdown.ts';
 
 /**
@@ -23,31 +24,11 @@ export interface OverlayElements {
   readonly bubble: HTMLElement;
   readonly title: HTMLElement;
   readonly time: HTMLElement;
+  /** Host for the per-meeting pick list, used only when meetings collide. */
+  readonly choices: HTMLElement;
   readonly joinButton: HTMLButtonElement;
   readonly dismissButton: HTMLButtonElement;
 }
-
-/** Content rendered into the speech bubble for an upcoming/active meeting. */
-export interface MeetingBubbleContent extends CountdownDisplay {
-  readonly kind: 'meeting';
-  readonly title: string;
-  readonly joinUrl: string | null;
-}
-
-/**
- * Content rendered into the speech bubble when a previously-working Google
- * Calendar connection has silently lapsed (e.g. a revoked/expired refresh
- * token) and needs a fresh interactive sign-in. Reuses the same walk-in/wave
- * entrance as a meeting alert so a dead connection can't go unnoticed until a
- * meeting is actually missed.
- */
-export interface ReconnectBubbleContent {
-  readonly kind: 'reconnect';
-  readonly title: string;
-  readonly message: string;
-}
-
-export type BubbleContent = MeetingBubbleContent | ReconnectBubbleContent;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -154,20 +135,72 @@ export class OverlayAnimator {
       // least as urgent as any single meeting.
       this.setUrgency('now');
       this.el.bubble.setAttribute('aria-label', 'Calendar connection lost');
+      this.renderChoices([]);
       this.el.joinButton.hidden = false;
       this.el.joinButton.textContent = 'Reconnect';
       this.el.joinButton.dataset.url = '';
       return;
     }
 
-    this.el.bubble.setAttribute('aria-label', 'Upcoming meeting reminder');
-    this.el.joinButton.textContent = 'Join Call';
     this.el.time.textContent = content.countdown;
     this.setUrgency(content.urgency);
 
-    const hasLink = content.joinUrl !== null && content.joinUrl.length > 0;
-    this.el.joinButton.hidden = !hasLink;
-    this.el.joinButton.dataset.url = content.joinUrl ?? '';
+    if (content.meetings.length > 1) {
+      // Several meetings start at the same moment: no single "Join Call" can
+      // be right, so the bubble lists them and the user picks one.
+      this.el.bubble.setAttribute('aria-label', 'Several meetings starting at once');
+      this.renderChoices(content.meetings);
+      this.el.joinButton.hidden = true;
+      this.el.joinButton.dataset.url = '';
+      return;
+    }
+
+    this.el.bubble.setAttribute('aria-label', 'Upcoming meeting reminder');
+    this.renderChoices([]);
+    this.el.joinButton.textContent = 'Join Call';
+    const [only] = content.meetings;
+    const joinUrl = only?.joinUrl ?? null;
+    this.el.joinButton.hidden = joinUrl === null || joinUrl.length === 0;
+    this.el.joinButton.dataset.url = joinUrl ?? '';
+  }
+
+  /**
+   * Fill (or clear) the pick list shown when meetings collide.
+   *
+   * Titles come from calendar data — untrusted input — so every node is built
+   * with `createElement`/`textContent`, never `innerHTML`. A meeting with no
+   * conference link still gets a row (hiding it would be worse than showing it
+   * is unjoinable), just not a clickable one.
+   */
+  private renderChoices(meetings: readonly MeetingChoice[]): void {
+    this.el.choices.replaceChildren();
+    this.el.choices.hidden = meetings.length === 0;
+    if (meetings.length === 0) return;
+
+    for (const meeting of meetings) {
+      const item = document.createElement('li');
+      item.className = 'bubble__choice';
+
+      if (meeting.joinUrl !== null && meeting.joinUrl.length > 0) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'bubble__join bubble__join--choice';
+        button.textContent = meeting.title;
+        button.setAttribute('aria-label', `Join ${meeting.title}`);
+        button.dataset.url = meeting.joinUrl;
+        item.append(button);
+      } else {
+        const label = document.createElement('span');
+        label.className = 'bubble__choice-label';
+        label.textContent = meeting.title;
+        const note = document.createElement('span');
+        note.className = 'bubble__choice-note';
+        note.textContent = 'No link';
+        item.append(label, note);
+      }
+
+      this.el.choices.append(item);
+    }
   }
 
   /** Update just the countdown (text + urgency) without replaying the entrance. */
