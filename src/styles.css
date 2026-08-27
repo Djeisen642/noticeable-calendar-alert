@@ -751,6 +751,12 @@ body {
   margin: 0 0 4px;
   padding: 0;
   list-style: none;
+  /* The bubble is anchored to the bottom of the stage and grows upward, so an
+     unusually crowded slot would otherwise push the heading and countdown off
+     the top of the screen. Two or three rows never reach this; a pile-up
+     scrolls instead of disappearing. */
+  max-height: 40vh;
+  overflow-y: auto;
 }
 
 .bubble__choices[hidden] {

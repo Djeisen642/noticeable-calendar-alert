@@ -459,10 +459,18 @@ class AlertController {
    * single-meeting "Join Call" button and each row of the simultaneous-meeting
    * pick list. A missing URL still dismisses — the user has made their choice
    * either way, and `openExternal` re-validates whatever it is given.
+   *
+   * The open happens *inside* the exclusive block, not before it, so a second
+   * click while the first dismissal is still animating is dropped whole. With
+   * one Join button that only cost a duplicate window; with a pick list, a
+   * change-of-mind click on another row during the ~1.7s exit would otherwise
+   * open a second, different call.
    */
   private join(url: string | undefined): void {
-    if (url) void openExternal(url);
-    void this.runExclusive(() => this.dismiss());
+    void this.runExclusive(async () => {
+      if (url) void openExternal(url);
+      await this.dismiss();
+    });
   }
 
   /** Serialize overlay mutations so present/dismiss can never interleave. */

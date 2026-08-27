@@ -85,14 +85,6 @@ export function selectNextEvents(events: readonly CalendarEvent[], now: Date): C
 }
 
 /**
- * The single soonest upcoming event — the first of `selectNextEvents`, used
- * where only one representative is needed (the poll cadence, the tray line).
- */
-export function selectNextEvent(events: readonly CalendarEvent[], now: Date): CalendarEvent | null {
-  return selectNextEvents(events, now)[0] ?? null;
-}
-
-/**
  * Deterministic in-memory implementation used in development and tests.
  *
  * It synthesizes a meeting a fixed number of seconds in the future so the entry

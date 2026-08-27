@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import {
-  MockCalendarSync,
-  selectNextEvent,
-  selectNextEvents,
-  type CalendarEvent,
-} from './calendar.ts';
+import { MockCalendarSync, selectNextEvents, type CalendarEvent } from './calendar.ts';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -13,71 +8,6 @@ afterEach(() => {
 function makeEvent(id: string, start: Date, end: Date, title = id): CalendarEvent {
   return { id, title, start, end, joinUrl: null };
 }
-
-describe('selectNextEvent', () => {
-  it('picks the soonest event that has not started yet', () => {
-    const now = new Date('2026-06-26T09:00:00.000Z');
-    const later = makeEvent(
-      'later',
-      new Date('2026-06-26T10:00:00.000Z'),
-      new Date('2026-06-26T10:30:00.000Z'),
-    );
-
-    expect(selectNextEvent([later], now)?.id).toBe('later');
-  });
-
-  it('skips a meeting already in progress in favor of a back-to-back follow-up', () => {
-    // Google's events.list filters by end time, so an in-progress meeting can
-    // still be events[0] in a startTime-sorted list. selectNextEvent must not
-    // get stuck on it — the very case that used to swallow back-to-back alerts.
-    const now = new Date('2026-06-26T09:30:00.000Z');
-    const inProgress = makeEvent(
-      'in-progress',
-      new Date('2026-06-26T09:00:00.000Z'),
-      new Date('2026-06-26T10:00:00.000Z'),
-    );
-    const backToBack = makeEvent(
-      'back-to-back',
-      new Date('2026-06-26T10:00:00.000Z'),
-      new Date('2026-06-26T10:30:00.000Z'),
-    );
-
-    expect(selectNextEvent([inProgress, backToBack], now)?.id).toBe('back-to-back');
-  });
-
-  it('picks the true soonest event even when the input is not sorted', () => {
-    // Nothing in the CalendarSync contract enforces call-site ordering at the
-    // type level, so selectNextEvent must not just take the first match.
-    const now = new Date('2026-06-26T09:00:00.000Z');
-    const farther = makeEvent(
-      'farther',
-      new Date('2026-06-26T12:00:00.000Z'),
-      new Date('2026-06-26T12:30:00.000Z'),
-    );
-    const soonest = makeEvent(
-      'soonest',
-      new Date('2026-06-26T10:00:00.000Z'),
-      new Date('2026-06-26T10:30:00.000Z'),
-    );
-
-    expect(selectNextEvent([farther, soonest], now)?.id).toBe('soonest');
-  });
-
-  it('returns null when every event has already started', () => {
-    const now = new Date('2026-06-26T09:30:00.000Z');
-    const past = makeEvent(
-      'past',
-      new Date('2026-06-26T09:00:00.000Z'),
-      new Date('2026-06-26T10:00:00.000Z'),
-    );
-
-    expect(selectNextEvent([past], now)).toBeNull();
-  });
-
-  it('returns null for an empty list', () => {
-    expect(selectNextEvent([], new Date())).toBeNull();
-  });
-});
 
 describe('selectNextEvents', () => {
   const now = new Date('2026-06-26T09:00:00.000Z');
@@ -172,7 +102,30 @@ describe('selectNextEvents', () => {
     expect(selectNextEvents([inProgress, upcoming], now).map((e) => e.id)).toEqual(['upcoming']);
   });
 
-  it('returns an empty list when nothing is upcoming', () => {
+  it('finds the true soonest meeting even when the input is not sorted', () => {
+    // Nothing in the CalendarSync contract enforces call-site ordering at the
+    // type level, so the scan must not just take the first future match.
+    const farther = makeEvent(
+      'farther',
+      at('2026-06-26T12:00:00.000Z'),
+      at('2026-06-26T12:30:00.000Z'),
+    );
+    const soonest = makeEvent(
+      'soonest',
+      at('2026-06-26T10:00:00.000Z'),
+      at('2026-06-26T10:30:00.000Z'),
+    );
+
+    expect(selectNextEvents([farther, soonest], now).map((e) => e.id)).toEqual(['soonest']);
+  });
+
+  it('returns an empty list when every meeting has already started', () => {
+    const past = makeEvent('past', at('2026-06-26T08:00:00.000Z'), at('2026-06-26T10:00:00.000Z'));
+
+    expect(selectNextEvents([past], now)).toEqual([]);
+  });
+
+  it('returns an empty list for an empty calendar', () => {
     expect(selectNextEvents([], now)).toEqual([]);
   });
 });
