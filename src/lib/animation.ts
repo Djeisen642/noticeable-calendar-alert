@@ -7,6 +7,7 @@
  * classes/attributes and awaits the corresponding DOM events.
  */
 
+import { resolveMeetingAction } from './action.ts';
 import type { CountdownDisplay, Urgency } from './countdown.ts';
 
 /**
@@ -32,6 +33,11 @@ export interface MeetingBubbleContent extends CountdownDisplay {
   readonly kind: 'meeting';
   readonly title: string;
   readonly joinUrl: string | null;
+  /**
+   * The event's Google Calendar page, used as the button's destination when
+   * the meeting has no join link (see lib/action.ts).
+   */
+  readonly detailsUrl: string | null;
 }
 
 /**
@@ -161,13 +167,16 @@ export class OverlayAnimator {
     }
 
     this.el.bubble.setAttribute('aria-label', 'Upcoming meeting reminder');
-    this.el.joinButton.textContent = 'Join Call';
     this.el.time.textContent = content.countdown;
     this.setUrgency(content.urgency);
 
-    const hasLink = content.joinUrl !== null && content.joinUrl.length > 0;
-    this.el.joinButton.hidden = !hasLink;
-    this.el.joinButton.dataset.url = content.joinUrl ?? '';
+    // A meeting without a video link still gets a button — it points at the
+    // event's own calendar page instead of a call. Only when there's neither
+    // does the button disappear.
+    const action = resolveMeetingAction(content);
+    this.el.joinButton.hidden = action === null;
+    this.el.joinButton.textContent = action?.label ?? 'Join Call';
+    this.el.joinButton.dataset.url = action?.url ?? '';
   }
 
   /** Update just the countdown (text + urgency) without replaying the entrance. */

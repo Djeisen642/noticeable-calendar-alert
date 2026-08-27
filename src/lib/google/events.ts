@@ -5,7 +5,7 @@
  */
 
 import type { CalendarEvent } from '../calendar.ts';
-import { safeJoinUrl } from '../url.ts';
+import { safeEventDetailsUrl, safeJoinUrl } from '../url.ts';
 import { MS_PER_MINUTE } from '../time.ts';
 
 const EVENTS_ENDPOINT = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
@@ -59,6 +59,16 @@ function extractJoinUrl(item: Record<string, unknown>): string | null {
   return null;
 }
 
+/**
+ * Pull the event's own Google Calendar page out of `htmlLink`.
+ *
+ * This is the bubble button's fallback when a meeting has no video link, so it
+ * goes through the same untrusted-URL treatment as the join link.
+ */
+function extractDetailsUrl(item: Record<string, unknown>): string | null {
+  return safeEventDetailsUrl(asString(item.htmlLink));
+}
+
 /** Resolve an event's start/end as timed instants, or `null` for all-day. */
 function timedRange(item: Record<string, unknown>): { start: Date; end: Date } | null {
   const start = isRecord(item.start) ? asString(item.start.dateTime) : undefined;
@@ -100,6 +110,7 @@ export function parseEventsResponse(payload: unknown): CalendarEvent[] {
       start: range.start,
       end: range.end,
       joinUrl: extractJoinUrl(raw),
+      detailsUrl: extractDetailsUrl(raw),
     });
   }
 

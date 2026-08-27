@@ -17,6 +17,13 @@ export interface CalendarEvent {
   readonly end: Date;
   /** Video-conference URL (Meet/Zoom/Teams), or `null` if none was detected. */
   readonly joinUrl: string | null;
+  /**
+   * The event's own page on Google Calendar (`htmlLink`), or `null` if the
+   * source didn't provide a usable one. Used as the bubble button's fallback
+   * destination when a meeting has no join link, so the alert always has
+   * somewhere to take you.
+   */
+  readonly detailsUrl: string | null;
 }
 
 /** An OAuth 2.0 token bundle as returned by Google's token endpoint. */
@@ -119,12 +126,17 @@ export class MockCalendarSync implements CalendarSync {
   private makeEvent(): CalendarEvent {
     this.sequence += 1;
     const start = new Date(Date.now() + this.secondsUntilMeeting * MS_PER_SECOND);
+    // Alternate between a video meeting and a link-less one (an in-person 1:1)
+    // so `npm run dev` exercises BOTH bubble buttons — "Join Call" and the
+    // "View Event" fallback — without a Google account.
+    const hasCall = this.sequence % 2 === 1;
     return {
       id: `mock-event-${String(this.sequence).padStart(3, '0')}`,
-      title: 'Sprint Planning',
+      title: hasCall ? 'Sprint Planning' : 'Coffee with Sam',
       start,
       end: new Date(start.getTime() + this.meetingDurationMs),
-      joinUrl: 'https://meet.google.com/abc-defg-hij',
+      joinUrl: hasCall ? 'https://meet.google.com/abc-defg-hij' : null,
+      detailsUrl: `https://calendar.google.com/calendar/event?eid=mock-${String(this.sequence)}`,
     };
   }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { safeExternalUrl, safeJoinUrl } from './url.ts';
+import { safeEventDetailsUrl, safeExternalUrl, safeJoinUrl } from './url.ts';
 
 describe('safeExternalUrl', () => {
   it('accepts https URLs and returns a normalized href', () => {
@@ -64,5 +64,33 @@ describe('safeJoinUrl', () => {
     expect(safeJoinUrl(null)).toBeNull();
     expect(safeJoinUrl(undefined)).toBeNull();
     expect(safeJoinUrl('not a url')).toBeNull();
+  });
+});
+
+describe('safeEventDetailsUrl', () => {
+  it.each([
+    'https://www.google.com/calendar/event?eid=abc123',
+    'https://calendar.google.com/calendar/event?eid=abc123',
+    'https://calendar.google.com/calendar/u/0/r/eventedit/abc123',
+  ])('accepts a Google Calendar event page: %s', (url) => {
+    expect(safeEventDetailsUrl(url)).toBe(url);
+  });
+
+  it.each([
+    ['a non-Google host', 'https://evil.example/calendar/event?eid=abc'],
+    ['a Google lookalike', 'https://calendar.google.com.evil.com/calendar/event'],
+    // htmlLink is attacker-influenced too, so a Google host is not enough on
+    // its own — the path must be the calendar app.
+    ['a non-calendar Google path', 'https://www.google.com/url?q=https://evil.example'],
+    ['a path that merely starts with the word', 'https://www.google.com/calendarish/event'],
+    ['plain http', 'http://calendar.google.com/calendar/event?eid=abc'],
+  ])('rejects %s', (_label, url) => {
+    expect(safeEventDetailsUrl(url)).toBeNull();
+  });
+
+  it('rejects null/undefined/garbage', () => {
+    expect(safeEventDetailsUrl(null)).toBeNull();
+    expect(safeEventDetailsUrl(undefined)).toBeNull();
+    expect(safeEventDetailsUrl('not a url')).toBeNull();
   });
 });

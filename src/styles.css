@@ -754,6 +754,14 @@ body {
   transition: transform 160ms ease;
 }
 
+/* The `display` above is an AUTHOR rule, and author declarations beat the user
+   agent's `[hidden] { display: none }` regardless of specificity — so without
+   this, `joinButton.hidden = true` (a meeting with neither a join link nor an
+   event page) would still paint a dead button. */
+.bubble__join[hidden] {
+  display: none;
+}
+
 .bubble__join:hover {
   background: linear-gradient(180deg, #6c9af1, #4a79dc);
   transform: translateY(-1px);
