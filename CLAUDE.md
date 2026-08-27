@@ -65,6 +65,7 @@ src/
       characters.test.ts  # Per-character id/docs/styles.css guards
     animation.ts        # OverlayAnimator (idle → walking → waving → presenting)
     url.ts(.test)       # safeExternalUrl(): http(s)-only guard for untrusted links
+    action.ts(.test)    # resolveMeetingAction(): Join Call -> View Event fallback
     tauri.ts            # Optional native bridge; degrades gracefully in a browser
     google/             # Real Google Calendar OAuth layer
       pkce.ts(.test)     # PKCE verifier/challenge + state (RFC 7636)
@@ -103,6 +104,13 @@ src-tauri/
 - **Security: calendar data is untrusted.** Meeting titles are rendered with
   `textContent` (never `innerHTML`). Join URLs pass through `safeExternalUrl()`
   and only `http(s)` ever reaches the OS opener.
+- **The bubble button always has somewhere to go.** `resolveMeetingAction()`
+  (`lib/action.ts`) picks the join link when there is one and otherwise falls
+  back to the event's own Google Calendar page (`htmlLink` →
+  `CalendarEvent.detailsUrl`), so a meeting with no video link gets a **View
+  Event** button instead of no button at all. Both candidates are re-validated
+  at that last hop (`safeJoinUrl` / `safeEventDetailsUrl`) — the details guard
+  requires https, an exact Google Calendar host, and a `/calendar` path.
 - **Tauri permissions need a _scope_, not just the permission.** A bare
   capability string like `"opener:allow-open-url"` enables the command but leaves
   its allowlist empty, so at runtime every call is _denied_ ("Not allowed to open

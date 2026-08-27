@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { demoBubbleContent, DEMO_TITLE, DEMO_JOIN_URL, DEMO_LEAD_MINUTES } from './demo.ts';
+import {
+  demoBubbleContent,
+  DEMO_TITLE,
+  DEMO_JOIN_URL,
+  DEMO_DETAILS_URL,
+  DEMO_LEAD_MINUTES,
+} from './demo.ts';
+import { resolveMeetingAction, JOIN_LABEL } from './action.ts';
 import { safeJoinUrl } from './url.ts';
 
 const now = new Date('2026-06-27T10:00:00.000Z');
@@ -26,5 +33,19 @@ describe('demoBubbleContent', () => {
     const { joinUrl } = demoBubbleContent(now);
     expect(joinUrl).toBe(DEMO_JOIN_URL);
     expect(safeJoinUrl(joinUrl)).toBe(DEMO_JOIN_URL);
+  });
+
+  it('resolves to a real "Join Call" button', () => {
+    // End-to-end guard on the preview: whatever the resolver decides is what
+    // the bubble renders, so assert the preview actually offers the call.
+    expect(resolveMeetingAction(demoBubbleContent(now))).toEqual({
+      label: JOIN_LABEL,
+      url: DEMO_JOIN_URL,
+      kind: 'join',
+    });
+  });
+
+  it('carries an event-details link as a faithful stand-in for a real event', () => {
+    expect(demoBubbleContent(now).detailsUrl).toBe(DEMO_DETAILS_URL);
   });
 });
