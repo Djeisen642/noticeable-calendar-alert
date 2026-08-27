@@ -701,6 +701,11 @@ body {
   margin: 0 0 4px;
   font-size: 15px;
   font-weight: 700;
+  /* Meeting titles are untrusted calendar data and the heading is the one
+     place a title is shown in full. A long run with no spaces or hyphens (a
+     pasted URL, a compound word) has no break opportunity, so without this it
+     paints straight out of the bubble and across the character. */
+  overflow-wrap: anywhere;
 }
 
 .bubble__time {
