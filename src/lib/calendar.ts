@@ -17,6 +17,13 @@ export interface CalendarEvent {
   readonly end: Date;
   /** Video-conference URL (Meet/Zoom/Teams), or `null` if none was detected. */
   readonly joinUrl: string | null;
+  /**
+   * The event's own page on Google Calendar (`htmlLink`), or `null` if the
+   * source didn't provide a usable one. Used as the bubble button's fallback
+   * destination when a meeting has no join link, so the alert always has
+   * somewhere to take you.
+   */
+  readonly detailsUrl: string | null;
 }
 
 /** An OAuth 2.0 token bundle as returned by Google's token endpoint. */
@@ -99,11 +106,15 @@ export class MockCalendarSync implements CalendarSync {
   private readonly rearmAfterMs = 5 * MS_PER_SECOND;
   /** Synthetic meeting length, mirroring the real parser's default. */
   private readonly meetingDurationMs = 30 * MS_PER_MINUTE;
-  /** The cast of synthetic meetings, cycled through on each re-arm. */
+  /**
+   * The cast of synthetic meetings, cycled through on each re-arm. The
+   * link-less one is deliberate: it exercises the "View Event" fallback
+   * (lib/action.ts) alongside the two video calls.
+   */
   private static readonly TEMPLATES: readonly { title: string; joinUrl: string | null }[] = [
     { title: 'Sprint Planning', joinUrl: 'https://meet.google.com/abc-defg-hij' },
     { title: 'Design Review', joinUrl: 'https://zoom.us/j/9876543210' },
-    { title: 'Budget Sync (no link)', joinUrl: null },
+    { title: 'Coffee with Sam', joinUrl: null },
   ];
   private sequence = 0;
   /** The events tied for the next start time — one, or several at once. */
@@ -159,6 +170,9 @@ export class MockCalendarSync implements CalendarSync {
     this.sequence += 1;
     const simultaneous = this.sequence % 3 === 0;
     const start = new Date(Date.now() + this.secondsUntilMeeting * MS_PER_SECOND);
+    // Non-simultaneous rounds walk the cast one at a time, so `npm run dev`
+    // sees both bubble buttons — "Join Call" and the "View Event" fallback for
+    // the link-less meeting — as well as the pick list.
     const templates = simultaneous
       ? MockCalendarSync.TEMPLATES
       : [MockCalendarSync.TEMPLATES[this.sequence % MockCalendarSync.TEMPLATES.length]];
@@ -168,6 +182,7 @@ export class MockCalendarSync implements CalendarSync {
       start,
       end: new Date(start.getTime() + this.meetingDurationMs),
       joinUrl: template.joinUrl,
+      detailsUrl: `https://calendar.google.com/calendar/event?eid=mock-${String(this.sequence)}-${String(index)}`,
     }));
   }
 

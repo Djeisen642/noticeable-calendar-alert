@@ -9,7 +9,8 @@ your Google Calendar and, right before a meeting starts, summons an
 **knight** and a **fire-breathing dragon** — marches in from the right edge
 of your screen, waves (the dragon punctuates the greeting with a burst of
 flame), and pops a speech bubble with the meeting title and a **Join Call**
-button. In the final minute the character starts hopping while the countdown
+button — or, for a meeting with no video link, a **View Event** button that
+opens the event on Google Calendar. In the final minute the character starts hopping while the countdown
 pulses red, so the alert gets harder to ignore exactly when it should.
 
 Built with **Tauri v2** + **Vanilla TypeScript + Vite** — no React, no UI
@@ -38,6 +39,7 @@ src/
     countdown.ts       # Pure meeting-countdown math + urgency levels (unit-tested)
     countdown.test.ts  # Vitest specs for the delta calculations
     calendar.ts        # Google Calendar sync interface + deterministic mock
+    action.ts          # Bubble button: join link, else the event page (unit-tested)
     characters/        # The mascot cast — contract, knight, dragon, rotation
     animation.ts       # OverlayAnimator (walk → wave → bubble → presenting)
     tauri.ts           # Optional bridge to the Tauri runtime (degrades in browser)

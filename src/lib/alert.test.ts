@@ -20,6 +20,7 @@ function event(id: string, minutesFromNow: number): CalendarEvent {
     start,
     end: new Date(start.getTime() + 30 * 60_000),
     joinUrl: null,
+    detailsUrl: null,
   };
 }
 

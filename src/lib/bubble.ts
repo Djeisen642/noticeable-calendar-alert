@@ -9,11 +9,17 @@
 import type { CalendarEvent } from './calendar.ts';
 import { describeCountdown, type CountdownDelta, type CountdownDisplay } from './countdown.ts';
 
-/** One meeting the user can pick from the bubble. */
+/**
+ * One meeting the user can pick from the bubble. Carries both link candidates
+ * so each row resolves its own action via `resolveMeetingAction` — the same
+ * join-then-details precedence the single-meeting button uses.
+ */
 export interface MeetingChoice {
   readonly title: string;
   /** Video-conference URL, or `null` when the invite carries no link. */
   readonly joinUrl: string | null;
+  /** The event's Google Calendar page, the fallback destination. */
+  readonly detailsUrl: string | null;
 }
 
 /**
@@ -74,7 +80,11 @@ export function meetingBubbleContent(
   if (events.length === 0) {
     throw new RangeError('meetingBubbleContent requires at least one event');
   }
-  const meetings = events.map(({ title, joinUrl }) => ({ title, joinUrl }));
+  const meetings = events.map(({ title, joinUrl, detailsUrl }) => ({
+    title,
+    joinUrl,
+    detailsUrl,
+  }));
   return {
     kind: 'meeting',
     title: meetingHeading(meetings),

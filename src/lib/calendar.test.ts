@@ -6,7 +6,7 @@ afterEach(() => {
 });
 
 function makeEvent(id: string, start: Date, end: Date, title = id): CalendarEvent {
-  return { id, title, start, end, joinUrl: null };
+  return { id, title, start, end, joinUrl: null, detailsUrl: null };
 }
 
 describe('selectNextEvents', () => {
@@ -151,6 +151,24 @@ describe('MockCalendarSync', () => {
     const [event] = await sync.getUpcomingEvents(0);
 
     expect(event.start.getTime()).toBe(Date.parse('2026-06-26T09:00:08.000Z'));
+  });
+
+  it('always offers a details link, even for the meeting with no call', async () => {
+    // The overlay's button falls back to the event page when there's no join
+    // link, so the mock must carry both for `npm run dev` to exercise it.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-26T09:00:00.000Z'));
+
+    const sync = new MockCalendarSync(8);
+    const [first] = await sync.getUpcomingEvents(0);
+    expect(first.joinUrl).not.toBeNull();
+    expect(first.detailsUrl).not.toBeNull();
+
+    vi.advanceTimersByTime(20_000);
+    const [second] = await sync.getUpcomingEvents(0);
+    // Alternating: the second synthetic meeting is an in-person one.
+    expect(second.joinUrl).toBeNull();
+    expect(second.detailsUrl).not.toBeNull();
   });
 
   it('tracks sign-in state so the tray toggle can reflect it', async () => {

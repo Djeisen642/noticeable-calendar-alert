@@ -66,6 +66,7 @@ src/
     bubble.ts(.test)    # Bubble content model: heading + the simultaneous-meeting list
     animation.ts        # OverlayAnimator (idle → walking → waving → presenting)
     url.ts(.test)       # safeExternalUrl(): http(s)-only guard for untrusted links
+    action.ts(.test)    # resolveMeetingAction(): Join Call -> View Event fallback
     tauri.ts            # Optional native bridge; degrades gracefully in a browser
     google/             # Real Google Calendar OAuth layer
       pkce.ts(.test)     # PKCE verifier/challenge + state (RFC 7636)
@@ -105,9 +106,18 @@ src-tauri/
   `textContent` (never `innerHTML`) — including every row the animator builds
   for the simultaneous-meeting pick list. Join URLs pass through
   `safeExternalUrl()` and only `http(s)` ever reaches the OS opener.
+- **The bubble button always has somewhere to go.** `resolveMeetingAction()`
+  (`lib/action.ts`) picks the join link when there is one and otherwise falls
+  back to the event's own Google Calendar page (`htmlLink` →
+  `CalendarEvent.detailsUrl`), so a meeting with no video link gets a **View
+  Event** button instead of no button at all. Both candidates are re-validated
+  at that last hop (`safeJoinUrl` / `safeEventDetailsUrl`) — the details guard
+  requires https, an exact Google Calendar host, and a `/calendar` path. Every
+  row of the pick list resolves through the same function, so a clashing
+  meeting without a call still offers its event page.
 - **An alert is a _group_, not an event.** `selectNextEvents()` returns every
   meeting tied for the soonest start, and the overlay presents the whole tie as
-  one alert with a Join button per meeting — a double-booked slot must never
+  one alert with a button per meeting — a double-booked slot must never
   silently pick one for the user. `alertKey()` (order-independent) is what
   present/dismiss bookkeeping keys off, so a re-poll that reshuffles a tie
   can't resurrect an alert the user already answered.

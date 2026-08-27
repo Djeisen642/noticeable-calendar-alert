@@ -18,6 +18,12 @@ export const DEMO_TITLE = 'Sprint Planning';
  * what a genuine alert looks like.
  */
 export const DEMO_JOIN_URL = 'https://meet.google.com/abc-defg-hij';
+/**
+ * Sample event-details link, mirroring Google's `htmlLink` shape. The preview
+ * uses the join link above, but carrying this too keeps the placeholder a
+ * faithful stand-in for a real event.
+ */
+export const DEMO_DETAILS_URL = 'https://calendar.google.com/calendar/event?eid=demo';
 /** How far "ahead" the fake meeting is, so the countdown looks realistic. */
 export const DEMO_LEAD_MINUTES = 5;
 
@@ -30,7 +36,16 @@ export function demoBubbleContent(now: Date = new Date()): MeetingBubbleContent 
   const start = new Date(now.getTime() + DEMO_LEAD_MINUTES * MS_PER_MINUTE);
   const end = new Date(start.getTime() + 30 * MS_PER_MINUTE);
   return meetingBubbleContent(
-    [{ id: 'demo-event', title: DEMO_TITLE, start, end, joinUrl: DEMO_JOIN_URL }],
+    [
+      {
+        id: 'demo-event',
+        title: DEMO_TITLE,
+        start,
+        end,
+        joinUrl: DEMO_JOIN_URL,
+        detailsUrl: DEMO_DETAILS_URL,
+      },
+    ],
     getCountdownDelta(start, now),
   );
 }

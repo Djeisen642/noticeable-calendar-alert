@@ -7,6 +7,7 @@
  * classes/attributes and awaits the corresponding DOM events.
  */
 
+import { DETAILS_LABEL, JOIN_LABEL, resolveMeetingAction } from './action.ts';
 import type { BubbleContent, MeetingChoice } from './bubble.ts';
 import type { CountdownDisplay, Urgency } from './countdown.ts';
 
@@ -144,9 +145,10 @@ export class OverlayAnimator {
 
     this.el.time.textContent = content.countdown;
     this.setUrgency(content.urgency);
+    const [only] = content.meetings;
 
     if (content.meetings.length > 1) {
-      // Several meetings start at the same moment: no single "Join Call" can
+      // Several meetings start at the same moment: no single primary button can
       // be right, so the bubble lists them and the user picks one.
       this.el.bubble.setAttribute('aria-label', 'Several meetings starting at once');
       this.renderChoices(content.meetings);
@@ -157,20 +159,29 @@ export class OverlayAnimator {
 
     this.el.bubble.setAttribute('aria-label', 'Upcoming meeting reminder');
     this.renderChoices([]);
-    this.el.joinButton.textContent = 'Join Call';
-    const [only] = content.meetings;
-    const joinUrl = only?.joinUrl ?? null;
-    this.el.joinButton.hidden = joinUrl === null || joinUrl.length === 0;
-    this.el.joinButton.dataset.url = joinUrl ?? '';
+    // A meeting without a video link still gets a button — it points at the
+    // event's own calendar page instead of a call. Only when there's neither
+    // does the button disappear.
+    const action = only === undefined ? null : resolveMeetingAction(only);
+    this.el.joinButton.hidden = action === null;
+    this.el.joinButton.textContent = action?.label ?? JOIN_LABEL;
+    this.el.joinButton.dataset.url = action?.url ?? '';
   }
 
   /**
    * Fill (or clear) the pick list shown when meetings collide.
    *
+   * Each row resolves its own action (lib/action.ts) exactly as the single
+   * button does: the call when there is one, otherwise the event's calendar
+   * page, otherwise nothing to click. The row is labelled with the meeting
+   * title — that is what the user is choosing between — and a details-only row
+   * is styled apart and tagged, so a glance says which of the clashing
+   * meetings is an actual call.
+   *
    * Titles come from calendar data — untrusted input — so every node is built
-   * with `createElement`/`textContent`, never `innerHTML`. A meeting with no
-   * conference link still gets a row (hiding it would be worse than showing it
-   * is unjoinable), just not a clickable one.
+   * with `createElement`/`textContent`, never `innerHTML`. A meeting with
+   * neither link still gets a row (hiding it would be worse than showing it is
+   * unreachable), just not a clickable one.
    */
   private renderChoices(meetings: readonly MeetingChoice[]): void {
     this.el.choices.replaceChildren();
@@ -180,16 +191,9 @@ export class OverlayAnimator {
     for (const meeting of meetings) {
       const item = document.createElement('li');
       item.className = 'bubble__choice';
+      const action = resolveMeetingAction(meeting);
 
-      if (meeting.joinUrl !== null && meeting.joinUrl.length > 0) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'bubble__join bubble__join--choice';
-        button.textContent = meeting.title;
-        button.setAttribute('aria-label', `Join ${meeting.title}`);
-        button.dataset.url = meeting.joinUrl;
-        item.append(button);
-      } else {
+      if (action === null) {
         const label = document.createElement('span');
         label.className = 'bubble__choice-label';
         label.textContent = meeting.title;
@@ -197,6 +201,28 @@ export class OverlayAnimator {
         note.className = 'bubble__choice-note';
         note.textContent = 'No link';
         item.append(label, note);
+        this.el.choices.append(item);
+        continue;
+      }
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className =
+        action.kind === 'join'
+          ? 'bubble__join bubble__join--choice'
+          : 'bubble__join bubble__join--choice bubble__join--details';
+      button.textContent = meeting.title;
+      // The visible text is the title; the accessible name says what clicking
+      // it actually does, which the title alone doesn't convey.
+      button.setAttribute('aria-label', `${action.label}: ${meeting.title}`);
+      button.dataset.url = action.url;
+      item.append(button);
+
+      if (action.kind === 'details') {
+        const note = document.createElement('span');
+        note.className = 'bubble__choice-note';
+        note.textContent = DETAILS_LABEL;
+        item.append(note);
       }
 
       this.el.choices.append(item);

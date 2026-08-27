@@ -162,6 +162,8 @@ class AlertController {
         void this.runExclusive(() => this.dismiss());
         return;
       }
+      // Whatever the bubble resolved this button to — the call, or the event's
+      // calendar page when the meeting has no join link (see lib/action.ts).
       this.join(this.elements.joinButton.dataset.url);
     });
 
