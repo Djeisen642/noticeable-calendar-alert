@@ -27,9 +27,11 @@ export interface MeetingChoice {
 /**
  * Content rendered into the speech bubble for the meeting(s) starting next.
  *
- * `meetings` holds every meeting tied for that start time — usually one, but
- * double-booking is routine, and when it happens the bubble lists them all so
- * the user can pick which to join instead of the overlay silently choosing.
+ * Usually one meeting, but double-booking is routine, and when it happens the
+ * user picks rather than the overlay silently choosing. `meetings` carries the
+ * rows to list — the most actionable first, capped at `MAX_VISIBLE_MEETINGS` —
+ * while `title` counts the whole clash and `hiddenCount`/`calendarUrl` disclose
+ * whatever did not fit.
  */
 export interface MeetingBubbleContent extends CountdownDisplay {
   readonly kind: 'meeting';
