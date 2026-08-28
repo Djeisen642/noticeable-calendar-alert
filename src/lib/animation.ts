@@ -7,7 +7,8 @@
  * classes/attributes and awaits the corresponding DOM events.
  */
 
-import { resolveMeetingAction } from './action.ts';
+import { DETAILS_LABEL, JOIN_LABEL, resolveMeetingAction } from './action.ts';
+import type { BubbleContent, MeetingChoice } from './bubble.ts';
 import type { CountdownDisplay, Urgency } from './countdown.ts';
 
 /**
@@ -24,36 +25,11 @@ export interface OverlayElements {
   readonly bubble: HTMLElement;
   readonly title: HTMLElement;
   readonly time: HTMLElement;
+  /** Host for the per-meeting pick list, used only when meetings collide. */
+  readonly choices: HTMLElement;
   readonly joinButton: HTMLButtonElement;
   readonly dismissButton: HTMLButtonElement;
 }
-
-/** Content rendered into the speech bubble for an upcoming/active meeting. */
-export interface MeetingBubbleContent extends CountdownDisplay {
-  readonly kind: 'meeting';
-  readonly title: string;
-  readonly joinUrl: string | null;
-  /**
-   * The event's Google Calendar page, used as the button's destination when
-   * the meeting has no join link (see lib/action.ts).
-   */
-  readonly detailsUrl: string | null;
-}
-
-/**
- * Content rendered into the speech bubble when a previously-working Google
- * Calendar connection has silently lapsed (e.g. a revoked/expired refresh
- * token) and needs a fresh interactive sign-in. Reuses the same walk-in/wave
- * entrance as a meeting alert so a dead connection can't go unnoticed until a
- * meeting is actually missed.
- */
-export interface ReconnectBubbleContent {
-  readonly kind: 'reconnect';
-  readonly title: string;
-  readonly message: string;
-}
-
-export type BubbleContent = MeetingBubbleContent | ReconnectBubbleContent;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -160,23 +136,137 @@ export class OverlayAnimator {
       // least as urgent as any single meeting.
       this.setUrgency('now');
       this.el.bubble.setAttribute('aria-label', 'Calendar connection lost');
+      this.renderChoices([], 0, null);
       this.el.joinButton.hidden = false;
       this.el.joinButton.textContent = 'Reconnect';
       this.el.joinButton.dataset.url = '';
       return;
     }
 
-    this.el.bubble.setAttribute('aria-label', 'Upcoming meeting reminder');
     this.el.time.textContent = content.countdown;
     this.setUrgency(content.urgency);
+    const [only] = content.meetings;
 
+    if (content.meetings.length > 1) {
+      // Several meetings start at the same moment: no single primary button can
+      // be right, so the bubble lists them and the user picks one.
+      this.el.bubble.setAttribute('aria-label', 'Several meetings starting at once');
+      this.renderChoices(content.meetings, content.hiddenCount, content.calendarUrl);
+      this.el.joinButton.hidden = true;
+      this.el.joinButton.dataset.url = '';
+      return;
+    }
+
+    this.el.bubble.setAttribute('aria-label', 'Upcoming meeting reminder');
+    this.renderChoices([], 0, null);
     // A meeting without a video link still gets a button — it points at the
     // event's own calendar page instead of a call. Only when there's neither
     // does the button disappear.
-    const action = resolveMeetingAction(content);
+    const action = only === undefined ? null : resolveMeetingAction(only);
     this.el.joinButton.hidden = action === null;
-    this.el.joinButton.textContent = action?.label ?? 'Join Call';
+    this.el.joinButton.textContent = action?.label ?? JOIN_LABEL;
     this.el.joinButton.dataset.url = action?.url ?? '';
+  }
+
+  /**
+   * Fill (or clear) the pick list shown when meetings collide.
+   *
+   * Each row resolves its own action (lib/action.ts) exactly as the single
+   * button does: the call when there is one, otherwise the event's calendar
+   * page, otherwise nothing to click. The row is labelled with the meeting
+   * title — that is what the user is choosing between — and a details-only row
+   * is styled apart and tagged, so a glance says which of the clashing
+   * meetings is an actual call.
+   *
+   * Titles come from calendar data — untrusted input — so every node is built
+   * with `createElement`/`textContent`, never `innerHTML`. A meeting with
+   * neither link still gets a row (hiding it would be worse than showing it is
+   * unreachable), just not a clickable one.
+   */
+  private renderChoices(
+    meetings: readonly MeetingChoice[],
+    hiddenCount: number,
+    calendarUrl: string | null,
+  ): void {
+    this.el.choices.replaceChildren();
+    this.el.choices.hidden = meetings.length === 0;
+    if (meetings.length === 0) return;
+
+    for (const meeting of meetings) {
+      const item = document.createElement('li');
+      item.className = 'bubble__choice';
+      const action = resolveMeetingAction(meeting);
+
+      if (action === null) {
+        const label = document.createElement('span');
+        label.className = 'bubble__choice-label';
+        label.textContent = meeting.title;
+        const note = document.createElement('span');
+        note.className = 'bubble__choice-note';
+        note.textContent = 'No link';
+        item.append(label, note);
+        this.el.choices.append(item);
+        continue;
+      }
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className =
+        action.kind === 'join'
+          ? 'bubble__join bubble__join--choice'
+          : 'bubble__join bubble__join--choice bubble__join--details';
+      button.textContent = meeting.title;
+      // The visible text is the title; the accessible name says what clicking
+      // it actually does, which the title alone doesn't convey.
+      button.setAttribute('aria-label', `${action.label}: ${meeting.title}`);
+      button.dataset.url = action.url;
+      item.append(button);
+
+      if (action.kind === 'details') {
+        const note = document.createElement('span');
+        note.className = 'bubble__choice-note';
+        note.textContent = DETAILS_LABEL;
+        item.append(note);
+      }
+
+      this.el.choices.append(item);
+    }
+
+    if (hiddenCount > 0) {
+      this.el.choices.append(this.buildOverflowRow(hiddenCount, calendarUrl));
+    }
+  }
+
+  /**
+   * The "+N more" row closing a capped pick list.
+   *
+   * The count is always shown, so a clash the list could not fit is disclosed
+   * rather than silently trimmed. When the calendar link resolves it is a
+   * button that opens the day's Google Calendar view — the one place that can
+   * show the rest — and otherwise a plain label, since a button that goes
+   * nowhere is worse than none.
+   */
+  private buildOverflowRow(hiddenCount: number, calendarUrl: string | null): HTMLLIElement {
+    const item = document.createElement('li');
+    item.className = 'bubble__choice bubble__choice--more';
+    const text = `+${String(hiddenCount)} more`;
+
+    if (calendarUrl === null) {
+      const label = document.createElement('span');
+      label.className = 'bubble__choice-note';
+      label.textContent = text;
+      item.append(label);
+      return item;
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'bubble__more';
+    button.textContent = text;
+    button.setAttribute('aria-label', 'View all meetings in Google Calendar');
+    button.dataset.url = calendarUrl;
+    item.append(button);
+    return item;
   }
 
   /** Update just the countdown (text + urgency) without replaying the entrance. */

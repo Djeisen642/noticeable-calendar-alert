@@ -701,6 +701,11 @@ body {
   margin: 0 0 4px;
   font-size: 15px;
   font-weight: 700;
+  /* Meeting titles are untrusted calendar data and the heading is the one
+     place a title is shown in full. A long run with no spaces or hyphens (a
+     pasted URL, a compound word) has no break opportunity, so without this it
+     paints straight out of the bubble and across the character. */
+  overflow-wrap: anywhere;
 }
 
 .bubble__time {
@@ -739,6 +744,51 @@ body {
   }
 }
 
+/* ---------- Simultaneous-meeting pick list ----------
+   Shown only when several meetings share a start time: one row per meeting so
+   the user can see the clash and choose which to join. Hidden (and emptied)
+   for the ordinary single-meeting alert. */
+
+.bubble__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.bubble__choices[hidden] {
+  display: none;
+}
+
+.bubble__choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A meeting whose invite carries no conference link: still listed (so the
+   clash is visible) but plainly not joinable. */
+.bubble__choice-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.6;
+  /* Long titles must not blow out the bubble's max-width. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bubble__choice-note {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5a6072;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
 .bubble__join {
   display: inline-block;
   width: 100%;
@@ -774,6 +824,59 @@ body {
 .bubble__join:focus-visible {
   outline: 2px solid var(--accent-strong);
   outline-offset: 2px;
+}
+
+/* Per-meeting Join button: the same affordance as the single-meeting one,
+   but labelled with the meeting it joins. */
+.bubble__join--choice {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The "+N more" row closing a capped list: a quiet link, not a third button
+   style competing with the meetings above it. */
+.bubble__choice--more {
+  justify-content: flex-end;
+}
+
+.bubble__more {
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  /* Only the lift is transitioned (GPU-only rule). */
+  transition: transform 160ms ease;
+}
+
+.bubble__more:hover {
+  transform: translateY(-1px);
+}
+
+.bubble__more:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+
+/* A clashing meeting with no call, only its event page: still one click away,
+   but styled apart from the real calls so a glance says which is which. */
+.bubble__join--details {
+  background: transparent;
+  border: 1px solid rgba(31, 35, 48, 0.18);
+  color: var(--bubble-fg);
+  opacity: 0.85;
+}
+
+.bubble__join--details:hover {
+  background: rgba(31, 35, 48, 0.05);
+  opacity: 1;
 }
 
 .bubble__dismiss {

@@ -105,3 +105,17 @@ export function safeEventDetailsUrl(url: string | null | undefined): string | nu
   }
   return pathname === '/calendar' || pathname.startsWith('/calendar/') ? safe : null;
 }
+
+/**
+ * Google Calendar's day view for `date`, used as the destination for the
+ * bubble's "+N more" row when a clash has more meetings than the pick list
+ * shows. Built from the viewer's local date parts, since the clash is in their
+ * own timezone, and round-tripped through `safeEventDetailsUrl` so the one
+ * host/path guard covers this link too.
+ */
+export function calendarDayUrl(date: Date): string | null {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1);
+  const day = String(date.getDate());
+  return safeEventDetailsUrl(`https://calendar.google.com/calendar/r/day/${year}/${month}/${day}`);
+}

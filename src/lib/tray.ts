@@ -49,8 +49,16 @@ export interface TrayStatusInput {
   readonly signedIn: boolean;
   /** `null` until the first fetch completes. */
   readonly lastSync: SyncState | null;
-  /** The soonest upcoming meeting, or `null` if none is cached. */
-  readonly next: { readonly title: string; readonly start: Date } | null;
+  /**
+   * The soonest upcoming meeting, or `null` if none is cached. `count` is how
+   * many meetings share that start time (1 unless the user is double-booked);
+   * with several, no single title represents them, so the line summarizes.
+   */
+  readonly next: {
+    readonly title: string;
+    readonly start: Date;
+    readonly count?: number;
+  } | null;
   readonly now: Date;
 }
 
@@ -105,7 +113,10 @@ export function formatTrayStatus(input: TrayStatusInput): TrayStatus {
     meeting = 'No upcoming meetings';
   } else {
     const delta = getCountdownDelta(input.next.start, input.now);
-    meeting = `Next: ${truncate(input.next.title, MAX_TITLE_LENGTH)} ${formatCountdown(delta)}`;
+    const count = input.next.count ?? 1;
+    const subject =
+      count > 1 ? `${String(count)} meetings` : truncate(input.next.title, MAX_TITLE_LENGTH);
+    meeting = `Next: ${subject} ${formatCountdown(delta)}`;
   }
 
   return { connection, meeting };

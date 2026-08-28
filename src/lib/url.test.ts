@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { safeEventDetailsUrl, safeExternalUrl, safeJoinUrl } from './url.ts';
+import { calendarDayUrl, safeEventDetailsUrl, safeExternalUrl, safeJoinUrl } from './url.ts';
 
 describe('safeExternalUrl', () => {
   it('accepts https URLs and returns a normalized href', () => {
@@ -92,5 +92,25 @@ describe('safeEventDetailsUrl', () => {
     expect(safeEventDetailsUrl(null)).toBeNull();
     expect(safeEventDetailsUrl(undefined)).toBeNull();
     expect(safeEventDetailsUrl('not a url')).toBeNull();
+  });
+});
+
+describe('calendarDayUrl', () => {
+  it('builds the Google Calendar day view for the date', () => {
+    expect(calendarDayUrl(new Date(2026, 5, 26, 9, 30))).toBe(
+      'https://calendar.google.com/calendar/r/day/2026/6/26',
+    );
+  });
+
+  it('uses local date parts, so a late-evening clash links to its own day', () => {
+    // Built from UTC parts instead, a 23:30 local meeting could link to
+    // tomorrow's calendar — the one day that does not contain it.
+    const late = new Date(2026, 0, 1, 23, 30);
+    expect(calendarDayUrl(late)).toBe('https://calendar.google.com/calendar/r/day/2026/1/1');
+  });
+
+  it('produces a URL its own details guard accepts', () => {
+    const url = calendarDayUrl(new Date(2026, 5, 26));
+    expect(safeEventDetailsUrl(url)).toBe(url);
   });
 });
