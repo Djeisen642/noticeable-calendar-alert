@@ -121,6 +121,13 @@ src-tauri/
   silently pick one for the user. `alertKey()` (order-independent) is what
   present/dismiss bookkeeping keys off, so a re-poll that reshuffles a tie
   can't resurrect an alert the user already answered.
+- **A capped pick list must be ordered by actionability.** The bubble lists at
+  most `MAX_VISIBLE_MEETINGS` (`lib/bubble.ts`) and closes with a "+N more" row
+  linking to that day's Google Calendar (`calendarDayUrl`), so an over-booked
+  slot is disclosed rather than trimmed — the headline still counts the whole
+  clash. Because rows can be cut, they are sorted by what they offer (a call,
+  then an event page, then neither): sorted by title, a five-way clash could
+  hide its only joinable call behind the "+N more" row.
 - **Tauri permissions need a _scope_, not just the permission.** A bare
   capability string like `"opener:allow-open-url"` enables the command but leaves
   its allowlist empty, so at runtime every call is _denied_ ("Not allowed to open

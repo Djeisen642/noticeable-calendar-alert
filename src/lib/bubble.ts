@@ -6,8 +6,10 @@
  * one-vs-many branching are unit-testable without a DOM.
  */
 
+import { resolveMeetingAction } from './action.ts';
 import type { CalendarEvent } from './calendar.ts';
 import { describeCountdown, type CountdownDelta, type CountdownDisplay } from './countdown.ts';
+import { calendarDayUrl } from './url.ts';
 
 /**
  * One meeting the user can pick from the bubble. Carries both link candidates
@@ -33,7 +35,12 @@ export interface MeetingBubbleContent extends CountdownDisplay {
   readonly kind: 'meeting';
   /** Bubble headline: the meeting's title, or a "N meetings at once" summary. */
   readonly title: string;
+  /** The meetings to list, at most `MAX_VISIBLE_MEETINGS` of them. */
   readonly meetings: readonly MeetingChoice[];
+  /** How many of the clash did not fit in `meetings`. Zero unless capped. */
+  readonly hiddenCount: number;
+  /** Where the "+N more" row goes: the day's Google Calendar view. */
+  readonly calendarUrl: string | null;
 }
 
 /**
@@ -50,6 +57,27 @@ export interface ReconnectBubbleContent {
 }
 
 export type BubbleContent = MeetingBubbleContent | ReconnectBubbleContent;
+
+/**
+ * How many meetings the pick list shows before it stops listing and offers the
+ * calendar instead. A pile-up is legible as a count and a link; it is not
+ * legible as a wall of near-identical buttons on a focus-stealing overlay.
+ */
+export const MAX_VISIBLE_MEETINGS = 3;
+
+/**
+ * How actionable a meeting is: a real call first, then one that only offers its
+ * event page, then one that offers nothing. Capping the list makes this order
+ * load-bearing rather than cosmetic — sorted by title, a five-way clash could
+ * hide its only joinable call behind the "+N more" row.
+ */
+function actionRank(meeting: MeetingChoice): number {
+  const action = resolveMeetingAction(meeting);
+  if (action === null) {
+    return 2;
+  }
+  return action.kind === 'join' ? 0 : 1;
+}
 
 /**
  * The bubble headline for a set of simultaneous meetings.
@@ -80,15 +108,23 @@ export function meetingBubbleContent(
   if (events.length === 0) {
     throw new RangeError('meetingBubbleContent requires at least one event');
   }
-  const meetings = events.map(({ title, joinUrl, detailsUrl }) => ({
+  const all = events.map(({ title, joinUrl, detailsUrl }) => ({
     title,
     joinUrl,
     detailsUrl,
   }));
+  // Sort is stable, so the caller's order survives within each rank.
+  const ordered = [...all].sort((a, b) => actionRank(a) - actionRank(b));
+  const meetings = ordered.slice(0, MAX_VISIBLE_MEETINGS);
+  const hiddenCount = ordered.length - meetings.length;
   return {
     kind: 'meeting',
-    title: meetingHeading(meetings),
+    // The headline counts the whole clash, not just the rows that fit.
+    title: meetingHeading(all),
     meetings,
+    hiddenCount,
+    // Every meeting in the group shares a start, so any of them dates the day.
+    calendarUrl: hiddenCount > 0 ? calendarDayUrl(events[0].start) : null,
     ...describeCountdown(delta),
   };
 }

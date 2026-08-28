@@ -756,12 +756,6 @@ body {
   margin: 0 0 4px;
   padding: 0;
   list-style: none;
-  /* The bubble is anchored to the bottom of the stage and grows upward, so an
-     unusually crowded slot would otherwise push the heading and countdown off
-     the top of the screen. Two or three rows never reach this; a pile-up
-     scrolls instead of disappearing. */
-  max-height: 40vh;
-  overflow-y: auto;
 }
 
 .bubble__choices[hidden] {
@@ -841,6 +835,34 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The "+N more" row closing a capped list: a quiet link, not a third button
+   style competing with the meetings above it. */
+.bubble__choice--more {
+  justify-content: flex-end;
+}
+
+.bubble__more {
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  /* Only the lift is transitioned (GPU-only rule). */
+  transition: transform 160ms ease;
+}
+
+.bubble__more:hover {
+  transform: translateY(-1px);
+}
+
+.bubble__more:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
 }
 
 /* A clashing meeting with no call, only its event page: still one click away,

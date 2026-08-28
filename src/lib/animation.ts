@@ -136,7 +136,7 @@ export class OverlayAnimator {
       // least as urgent as any single meeting.
       this.setUrgency('now');
       this.el.bubble.setAttribute('aria-label', 'Calendar connection lost');
-      this.renderChoices([]);
+      this.renderChoices([], 0, null);
       this.el.joinButton.hidden = false;
       this.el.joinButton.textContent = 'Reconnect';
       this.el.joinButton.dataset.url = '';
@@ -151,14 +151,14 @@ export class OverlayAnimator {
       // Several meetings start at the same moment: no single primary button can
       // be right, so the bubble lists them and the user picks one.
       this.el.bubble.setAttribute('aria-label', 'Several meetings starting at once');
-      this.renderChoices(content.meetings);
+      this.renderChoices(content.meetings, content.hiddenCount, content.calendarUrl);
       this.el.joinButton.hidden = true;
       this.el.joinButton.dataset.url = '';
       return;
     }
 
     this.el.bubble.setAttribute('aria-label', 'Upcoming meeting reminder');
-    this.renderChoices([]);
+    this.renderChoices([], 0, null);
     // A meeting without a video link still gets a button — it points at the
     // event's own calendar page instead of a call. Only when there's neither
     // does the button disappear.
@@ -183,7 +183,11 @@ export class OverlayAnimator {
    * neither link still gets a row (hiding it would be worse than showing it is
    * unreachable), just not a clickable one.
    */
-  private renderChoices(meetings: readonly MeetingChoice[]): void {
+  private renderChoices(
+    meetings: readonly MeetingChoice[],
+    hiddenCount: number,
+    calendarUrl: string | null,
+  ): void {
     this.el.choices.replaceChildren();
     this.el.choices.hidden = meetings.length === 0;
     if (meetings.length === 0) return;
@@ -227,6 +231,42 @@ export class OverlayAnimator {
 
       this.el.choices.append(item);
     }
+
+    if (hiddenCount > 0) {
+      this.el.choices.append(this.buildOverflowRow(hiddenCount, calendarUrl));
+    }
+  }
+
+  /**
+   * The "+N more" row closing a capped pick list.
+   *
+   * The count is always shown, so a clash the list could not fit is disclosed
+   * rather than silently trimmed. When the calendar link resolves it is a
+   * button that opens the day's Google Calendar view — the one place that can
+   * show the rest — and otherwise a plain label, since a button that goes
+   * nowhere is worse than none.
+   */
+  private buildOverflowRow(hiddenCount: number, calendarUrl: string | null): HTMLLIElement {
+    const item = document.createElement('li');
+    item.className = 'bubble__choice bubble__choice--more';
+    const text = `+${String(hiddenCount)} more`;
+
+    if (calendarUrl === null) {
+      const label = document.createElement('span');
+      label.className = 'bubble__choice-note';
+      label.textContent = text;
+      item.append(label);
+      return item;
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'bubble__more';
+    button.textContent = text;
+    button.setAttribute('aria-label', 'View all meetings in Google Calendar');
+    button.dataset.url = calendarUrl;
+    item.append(button);
+    return item;
   }
 
   /** Update just the countdown (text + urgency) without replaying the entrance. */
