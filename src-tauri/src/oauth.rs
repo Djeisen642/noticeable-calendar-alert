@@ -45,7 +45,9 @@ pub async fn oauth_capture(port: u16) -> Result<OauthRedirect, String> {
 
 fn capture_once(port: u16) -> Result<OauthRedirect, String> {
     let listener = TcpListener::bind(("127.0.0.1", port)).map_err(|err| err.to_string())?;
-    listener.set_nonblocking(true).map_err(|err| err.to_string())?;
+    listener
+        .set_nonblocking(true)
+        .map_err(|err| err.to_string())?;
 
     let deadline = Instant::now() + CAPTURE_TIMEOUT;
     loop {

@@ -86,5 +86,19 @@ jobs:
         with:
           workspaces: src-tauri
 
+      # The full Rust gate, as in the sibling task-tracker. `--locked` because
+      # Cargo.lock is committed: without it CI quietly resolved a fresh
+      # dependency set on every run, and the committed lockfile had drifted out
+      # of date (it lacked the keychain and HTTP-plugin stacks) with nothing
+      # noticing.
+      - name: cargo fmt
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+      - name: cargo clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
+
       - name: cargo check
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+
+      - name: cargo test
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
