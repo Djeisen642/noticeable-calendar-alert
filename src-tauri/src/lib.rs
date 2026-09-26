@@ -60,7 +60,14 @@ fn set_click_through(window: WebviewWindow, enabled: bool) -> Result<(), String>
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // First, per the plugin's docs: a second launch hands off to this copy and
+    // exits. There is nothing for it to show (the overlay appears for meetings,
+    // not on demand), so the hand-off is simply the second copy going away.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|_app, _argv, _cwd| {}));
+
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())

@@ -28,9 +28,11 @@ until all of the following are true. Do not report something as finished or
    the mock) lives in `src/lib/*.ts` and must be tested in a sibling
    `*.test.ts`. Bugs fixed here get a regression test so they can't silently
    return.
-4. **Rust changes compile.** `src-tauri` changes must pass `cargo check`
-   (the CI `rust` job does this). See "What cannot be verified in the agent
-   sandbox" below.
+4. **Rust changes pass the Rust gate.** In `src-tauri`: `cargo fmt --check`,
+   `cargo clippy --locked --all-targets -- -D warnings`, `cargo check --locked`,
+   `cargo test --locked`. All four run in CI, and all four run in the agent
+   sandbox once the system libraries are installed (below), so run them rather
+   than deferring to CI.
 5. **Adversarial self-review before declaring victory.** Re-read your own diff
    hunting for the bug that makes the _demo itself_ fail, not just lint nits.
    Several real defects in this repo's history (frozen countdown, launch panic,
@@ -143,6 +145,19 @@ src-tauri/
   `showError()` (tauri-plugin-dialog) so they're actually seen.
 - **Motion is GPU-only.** Animate `transform`/`opacity` exclusively; never
   animate layout properties. Respect `prefers-reduced-motion`.
+- **One copy of the app, ever (`tauri-plugin-single-instance`).** Two copies
+  meant two characters walking in for every meeting, every calendar poll
+  doubled against the Google API quota, and two OAuth flows racing on the same
+  keychain entry. A second launch hands off to the first and exits.
+  Registered first, per the plugin's docs. (Ported from the sibling
+  app-status-tracker, which found it.)
+- **The tray status is remembered only once the tray accepted it.** Recording
+  it before `setTrayStatus` resolved (and not awaiting it) meant one failure
+  left the tray stale until the text next changed.
+- **`Cargo.lock` is committed and CI uses `--locked`.** Without `--locked`, CI
+  resolved a fresh dependency set every run, and the committed lockfile had
+  drifted: it lacked the keychain and HTTP-plugin stacks entirely, and nothing
+  noticed. A lockfile CI doesn't enforce pins nothing.
 
 ## Commands
 
@@ -171,25 +186,33 @@ staged files at commit time.
 
 ## What CANNOT be verified in the agent sandbox
 
-This environment has **no Rust toolchain, no crates.io access, and no desktop
-webview**, so the following are _reviewed for correctness but not executed
-here_. Verify them on a real machine (or rely on the CI `rust` job) before
-trusting them:
+**The Rust does compile in the sandbox**, contrary to what this section used to
+say. A fresh container lacks the system libraries, and the failure reads like a
+broken crate (`The system library gdk-3.0 required by crate gdk-sys was not
+found`). Two commands, in this order:
 
-- **`cargo check` / `cargo build`** — the CI `rust` job is the source of truth.
-  There is no committed `Cargo.lock` yet (cargo has never run); add one once it
-  has, and switch CI to `--locked`.
+```bash
+apt-get update    # REQUIRED FIRST: a stale index 404s on every package below
+apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
+  libayatana-appindicator3-dev librsvg2-dev libsoup-3.0-dev libdbus-1-dev pkg-config
+```
+
+Then the full Rust gate runs (~90s for the first build). What the sandbox still
+lacks is **a desktop webview and a real desktop**, so these are _reviewed for
+correctness but not executed_:
+
 - **The transparent, click-through, always-on-top window actually behaving that
-  way on Windows** — including focus-stealing and right-edge positioning on a
-  multi-monitor setup. `position_overlay_right` now picks the largest connected
-  monitor (by pixel area) and accounts for its origin, not just its size, but
-  this logic is untested against real hardware/`cargo check` (see "Known
+  way on Windows**, including focus-stealing and right-edge positioning on a
+  multi-monitor setup. `position_overlay_right` picks the largest connected
+  monitor (by pixel area) and accounts for its origin, not just its size; this
+  compiles and passes clippy but has not met real hardware (see "Known
   follow-ups" for the taskbar gap that remains).
-- **`invoke('set_click_through')` succeeding under the strict CSP** — confirm
+- **`invoke('set_click_through')` succeeding under the strict CSP**: confirm
   the IPC `connect-src` (`ipc:` / `http://ipc.localhost`) is sufficient and that
   app-defined commands don't need a capability entry (they should not in v2).
 - **Tray icon + menu** rendering and the "Test Overlay" item.
-- **The Google OAuth native path** — `src-tauri/src/oauth.rs` (loopback redirect
+- **Single instance**: launch the app twice; there should be one tray icon.
+- **The Google OAuth native path**: `src-tauri/src/oauth.rs` (loopback redirect
   capture + keychain) and `src/lib/google/adapters.ts`. The OAuth/Calendar
   _logic_ is fully unit-tested via injected ports, but the live consent
   round-trip, the `tauri-plugin-http` calls, and the OS keychain
@@ -203,10 +226,11 @@ reviewed-but-unrun, and list what the user must check on-device.
 
 - Verify the Google OAuth native path on a real machine (logic is tested; the
   loopback/keychain/http-plugin adapters are reviewed-but-unrun).
-- Commit a `Cargo.lock`.
 - Multi-monitor overlay positioning now targets the largest monitor and
-  accounts for its origin (`src-tauri/src/lib.rs`, reviewed-but-unrun — no
-  Rust toolchain in this sandbox); taskbar-aware placement (avoiding the work
+  accounts for its origin (`src-tauri/src/lib.rs`, compiled and clippy-clean
+  but unrun on real hardware); taskbar-aware placement (avoiding the work
   area reserved by the OS taskbar) is still not done.
-- Optional: coverage thresholds; `cargo clippy`/`cargo fmt` gates once a Rust
-  toolchain is available to validate them locally.
+- Optional: coverage thresholds.
+- The crate has no Rust unit tests yet (`cargo test` runs zero). The pure parts
+  of `oauth.rs` (redirect query parsing) and the monitor-choice math in
+  `lib.rs` are the first candidates.

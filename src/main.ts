@@ -239,9 +239,16 @@ class AlertController {
     if (status.connection === this.lastConnection && status.meeting === this.lastMeeting) {
       return;
     }
-    this.lastConnection = status.connection;
-    this.lastMeeting = status.meeting;
-    void setTrayStatus(status.connection, status.meeting);
+    // Remembered only once the tray took it. Recording it before the call (and
+    // not awaiting it) meant one failure left the tray stale until the text
+    // next changed, and the rejection went unhandled. The next tick retries.
+    void setTrayStatus(status.connection, status.meeting).then(
+      () => {
+        this.lastConnection = status.connection;
+        this.lastMeeting = status.meeting;
+      },
+      () => undefined,
+    );
   }
 
   /** Run the interactive Google sign-in, then start polling immediately. */

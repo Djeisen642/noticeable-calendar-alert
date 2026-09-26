@@ -36,6 +36,13 @@ keyring = { version = "3", features = ["apple-native"] }
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 
+# One copy of the app, ever. Two copies meant two characters walking in for
+# every meeting, every calendar poll doubled against the Google API quota, and
+# two OAuth flows racing on the same keychain entry. The second launch hands
+# off to the first and exits. Desktop-only: it doesn't build for mobile.
+[target.'cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = "2"
+
 [features]
 # This feature is used by the CLI for production builds.
 custom-protocol = ["tauri/custom-protocol"]
